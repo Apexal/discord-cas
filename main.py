@@ -3,6 +3,8 @@ from flask import Flask, g, session, request, render_template, redirect, url_for
 from flask_cas import CAS, login_required, logout
 from dotenv import load_dotenv
 
+from discord import DISCORD_BOT_TOKEN
+
 # Load .env into os.environ
 load_dotenv()
 
