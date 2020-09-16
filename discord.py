@@ -14,7 +14,7 @@ HEADERS = {
     'Authorization': 'Bot ' + BOT_TOKEN,
 }
 
-OAUTH_URL = f'https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&response_type=code&scope=guilds.join%20identify'
+OAUTH_URL = f'https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&response_type=code&scope=guilds%20guilds.join%20identify'
 
 
 def get_tokens(code):
@@ -53,6 +53,12 @@ def get_user_info(access_token):
     response.raise_for_status()
     user = response.json()
     return user
+
+
+def get_user_guids(access_token: str):
+    response = requests.get(f'{API_BASE}/users/@me/guilds', headers=HEADERS)
+    response.raise_for_status()
+    return response.json()
 
 
 def add_user_to_server(access_token: str, user_id: str, nickname: str):
