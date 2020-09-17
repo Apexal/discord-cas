@@ -30,9 +30,10 @@ def index():
         # Limit to 20 characters so overall Discord nickname doesn't exceed limit of 32 characters
         first_name = request.form['first_name'].strip()[:20]
         last_name = request.form['last_name'].strip()
-        graduation_year = request.form['graduation_year'].strip()[:2]
+        graduation_year = request.form['graduation_year'].strip()[2:]
 
         name = first_name + ' ' + last_name[0]
+        # TODO: persist nickname somewhere else to avoid changing it
         nickname = f'{name} \'{graduation_year} ({cas.username.lower()})'
 
         return redirect(OAUTH_URL + '&state=' + urllib.parse.quote(nickname))
