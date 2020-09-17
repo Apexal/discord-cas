@@ -49,16 +49,17 @@ def discord_callback():
     error = request.args.get('error')
 
     if error:
+        # Handle the special case where the user declined to connect
         if error == 'access_denied':
             app.logger.error(
                 f'{cas.username} declined to connect their Discord account')
-            raise Exception('You declined to connect your Discord account!')
+            return render_template('error.html', error='You declined to connect your Discord account!')
         else:
+            # Handle generic Discord error
             error_description = request.args.get('error_description')
             app.logger.error(
                 f'An error occurred on the Discord callback for {cas.username}: {error_description}')
-            raise Exception(
-                'Something went wrong when connecting your Discord account. Please try again later.')
+            raise Exception(error_description)
 
     # Extract nickname from state parameter
     nickname = request.args.get('state')
@@ -73,8 +74,8 @@ def discord_callback():
     add_user_to_server(tokens['access_token'], discord_user['id'], nickname)
     app.logger.info(f'Added {cas.username} to Discord server')
 
+    # Set their nickname
     try:
-        # Set their nickname
         set_member_nickname(discord_user['id'], nickname)
         app.logger.info(
             f'Set {cas.username}\'s nickname to "{nickname}" on server')
@@ -82,8 +83,8 @@ def discord_callback():
         app.logger.warning(
             f'Failed to set nickname "{nickname}" to {cas.username} on server: {e}')
 
+    # Give them the verified role
     try:
-        # Give them the verified role
         add_role_to_member(discord_user['id'], VERIFIED_ROLE_ID)
         app.logger.info(f'Added verified role to {cas.username} on server')
     except requests.exceptions.HTTPError as e:
@@ -91,3 +92,15 @@ def discord_callback():
             f'Failed to add role to {cas.username} on server: {e}')
 
     return render_template('joined.html', rcs_id=cas.username.lower(), nickname=nickname, discord_server_id=SERVER_ID)
+
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    app.logger.exception(e)
+
+    # Hide error in production
+    error = e
+    if app.env == 'production' and not e.name == 'Not Found':
+        error = 'Something went wrong... Please try again later.'
+
+    return render_template('error.html', error=error), 500
