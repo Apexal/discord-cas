@@ -13,6 +13,7 @@ app = Flask(__name__)
 cas = CAS(app, '/cas')
 
 app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+app.config['SITE_TITLE'] = os.environ.get('SITE_TITLE')
 app.config['CAS_SERVER'] = 'https://cas-auth.rpi.edu/cas'
 app.config['CAS_AFTER_LOGIN'] = '/'
 

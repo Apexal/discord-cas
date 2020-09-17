@@ -4,7 +4,7 @@
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>ITWS Discord</title>
+    <title>{{ config['SITE_TITLE'] }}</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <style>
         :root {
@@ -204,7 +204,7 @@
 
 <body>
     <header class="rpi-navbar">
-        <span class="navbar-item">ITWS Discord Server</span>
+        <span class="navbar-item">{{ config['SITE_TITLE'] }}</span>
     </header>
     <main class="rpi-card">
         {% if alert %}
