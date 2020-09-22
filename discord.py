@@ -58,13 +58,15 @@ def get_user_info(access_token):
 
 
 def get_member(user_id: str) -> Dict:
+    '''Retreive a server member. Includes the user, their server nickname, roles, etc.'''
     response = requests.get(
         f'{API_BASE}/guilds/{SERVER_ID}/members/{user_id}', headers=HEADERS)
     response.raise_for_status()
     return response.json()
 
 
-def get_user_guids(access_token: str):
+def get_user_guilds(access_token: str):
+    '''Retrieve the servers a user is on.'''
     response = requests.get(f'{API_BASE}/users/@me/guilds', headers=HEADERS)
     response.raise_for_status()
     return response.json()
@@ -102,6 +104,14 @@ def set_member_nickname(user_id: str, nickname: str):
 def add_role_to_member(user_id: str, role_id: str):
     '''Add a role (identified by its id) to a member.'''
     response = requests.put(
+        f'{API_BASE}/guilds/{SERVER_ID}/members/{user_id}/roles/{role_id}', headers=HEADERS)
+    response.raise_for_status()
+    return response
+
+
+def remove_role_from_member(user_id: str, role_id: str):
+    '''Remove a role (identified by its id) from a member.'''
+    response = requests.delete(
         f'{API_BASE}/guilds/{SERVER_ID}/members/{user_id}/roles/{role_id}', headers=HEADERS)
     response.raise_for_status()
     return response
