@@ -134,7 +134,7 @@ def reset_discord():
     except:
         raise Exception('Failed to kick your old account from the server.')
 
-    return 'Reset'
+    return redirect('/')
 
 
 @app.route('/joined')
