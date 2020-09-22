@@ -89,6 +89,14 @@ def add_user_to_server(access_token: str, user_id: str, nickname: str):
     return response
 
 
+def kick_member_from_server(user_id: str):
+    '''Remove a user from the server.'''
+    response = requests.delete(
+        f'{API_BASE}/guilds/{SERVER_ID}/members/{user_id}', headers=HEADERS)
+    response.raise_for_status()
+    return response
+
+
 def set_member_nickname(user_id: str, nickname: str):
     '''Given a Discord user's id, set their nickname on the server.'''
     response = requests.patch(f'{API_BASE}/guilds/{SERVER_ID}/members/{user_id}',
