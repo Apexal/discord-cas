@@ -6,211 +6,27 @@
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <title>{{ config['SITE_TITLE'] }}</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <style>
-        :root {
-            /* Primary Colors */
-            --rpi-red: #d6001c;
-            --rpi-darkestgray: #222;
-            --rpi-darkgray: #363436;
-            --rpi-medgray: #54585a;
-            --rpi-black: #000;
-            --rpi-white: #fff;
-
-            /* Secondary Colors */
-            --rpi-darkred: #ab2328;
-            --rpi-darkblue: #00205c;
-            --rpi-lightblue: #7fa9ae;
-
-            /* Accent Colors */
-            --rpi-accent-gray: #9ea2a2;
-            --rpi-accent-lightgray: #d7dbde;
-            --rpi-accent-yellow: #ede86a;
-
-            /* Fonts */
-            --rpi-sans: 'Source Sans Pro', sans-serif;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&display=swap');
-
-        html,
-        body {
-            padding: 0;
-            margin: 0;
-            background-color: var(--rpi-white);
-            font-family: var(--rpi-sans);
-        }
-
-        .rpi-navbar {
-            width: 100%;
-            background-color: var(--rpi-darkestgray);
-            color: var(--rpi-white);
-            font-size: 1.25rem;
-        }
-
-        .rpi-navbar .navbar-item {
-            padding: 1rem 2rem;
-            display: inline-block;
-        }
-
-        .rpi-card {
-            margin: 3rem auto;
-            padding: 3rem;
-
-            max-width: 500px;
-            background-color: var(--rpi-accent-lightgray);
-        }
-
-        .rpi-alert {
-            background-color: var(--rpi-red);
-            padding: 1rem;
-            color: white;
-            margin-bottom: 1rem;
-        }
-
-        .rpi-page-title {
-            color: var(--rpi-darkred);
-            font-size: 2.5rem;
-            margin-top: 0;
-            margin-bottom: 1rem;
-            font-weight: 500;
-        }
-
-        .rpi-page-title.smaller {
-            font-size: 2rem;
-        }
-
-        [class^='rpi-h'] {
-            margin-top: 0;
-            margin-bottom: 0.5rem;
-            color: var(--rpi-black);
-        }
-
-        [class^='rpi-h']>a {
-            color: var(--rpi-darkred);
-        }
-
-        .rpi-h1 {
-            font-size: 2.5rem;
-            line-height: 1.5;
-            font-weight: 500;
-        }
-
-        .rpi-h2 {
-            font-size: 1rem;
-            line-height: 1.25;
-            font-weight: 600;
-        }
-
-        .rpi-h3 {
-            font-size: 1rem;
-            line-height: 1.25;
-            text-transform: uppercase;
-        }
-
-        .rpi-list {
-            padding: 0 1.5rem;
-        }
-
-        .rpi-buttons {
-            display: flex;
-        }
-
-        .rpi-buttons .rpi-button {
-            margin-right: 10px;
-            flex: 1;
-        }
-
-        .rpi-buttons .rpi-button:last-child {
-            margin-right: 0;
-        }
-
-        .rpi-button {
-            text-decoration: none;
-            color: var(--rpi-white);
-            background-color: var(--rpi-darkblue);
-
-            text-transform: uppercase;
-            font-size: .9rem;
-            font-weight: 400;
-            text-align: center;
-            letter-spacing: 1px;
-            line-height: 1.5;
-
-            padding: 0.5rem 3rem;
-            border: 2px solid transparent;
-            cursor: pointer;
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .rpi-button.is-fullwidth {
-            width: 100%;
-        }
-
-        .rpi-button.red {
-            background-color: var(--rpi-darkred);
-        }
-
-        .rpi-input {
-            font-size: 0.9rem;
-            font-weight: 300;
-
-            margin: 0;
-            margin-bottom: 1rem;
-
-            padding: 0.375em 0.75em;
-            border: 1px solid var(--rpi-darkestgray);
-            width: 100%;
-        }
-
-        .rpi-label {
-            color: var(--rpi-darkred);
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        ul.rpi-arrow-nav {
-            margin: 0;
-            margin-top: 2rem;
-            list-style-type: none;
-            padding: 0;
-        }
-
-        ul.rpi-arrow-nav li {
-            border-top: 1px solid var(--rpi-accent-gray);
-            padding: 3% 1%;
-        }
-
-        ul.rpi-arrow-nav li:last-child {
-            border-bottom: 1px solid var(--rpi-accent-gray);
-        }
-
-        ul.rpi-arrow-nav li a {
-            text-decoration: none;
-            color: var(--rpi-medgray);
-        }
-
-        ul.rpi-arrow-nav li::after {
-            content: "»";
-            float: right;
-            color: var(--rpi-medgray);
-        }
-    </style>
+    <link rel="stylesheet" href="https://apexal.github.io/rpi-css/rpi.css">
 </head>
 
 <body>
     <header class="rpi-navbar">
-        <span class="navbar-item">{{ config['SITE_TITLE'] }}</span>
+        <span class="navbar-brand">{{ config['SITE_TITLE'] }}</span>
     </header>
     <main class="rpi-card">
         {% if alert %}
         <div class="rpi-alert">{{ alert }}</div>
         {% endif %}
         {% block content %}{% endblock %}
+
+        <details>
+            <summary class="rpi-h2">What is this site?</summary>
+            This is not an official RPI service. It is an open-source webapp developed by students. The source code is
+            freely
+            available
+            on <a href="https://github.com/Apexal/discord-cas" target="_blank">GitHub</a>. Please report issues or
+            request features there!
+        </details>
     </main>
 </body>
 

@@ -5,17 +5,17 @@
 <form method="POST" style="margin-top: 2rem;">
     <div class="field">
         <label class="rpi-label" for="first-name">First Name</label>
-        <input class="rpi-input" value="{{ user['name']['first'] }}" type="text" name="first_name" id="first-name"
+        <input class="rpi-input" value="{{ user['first_name'] }}" type="text" name="first_name" id="first-name"
             placeholder="Your given name or nickname" maxlength="20" required>
         <label class="rpi-label" for="last-name">Last Name</label>
-        <input class="rpi-input" value="{{ user['name']['last'] }}" type="text" name="last_name" id="last-name"
+        <input class="rpi-input" value="{{ user['last_name'] }}" type="text" name="last_name" id="last-name"
             placeholder="Your family name" required>
     </div>
 
     <div class="field">
         <label class="rpi-label" for="grad-year">Graduation Year</label>
         <input class="rpi-input" value="{{ user['graduation_year'] }}" type="number" name="graduation_year"
-            id="grad-year" value="2020" min="1900" max="2100" placeholder="What year will you graduate?" required>
+            id="grad-year" min="2000" max="2030" placeholder="What year will you graduate?" required>
     </div>
 
     <p>
