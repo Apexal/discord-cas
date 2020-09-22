@@ -1,4 +1,6 @@
+from http.client import responses
 import os
+from typing import Dict
 import requests
 from dotenv import load_dotenv
 load_dotenv()
@@ -53,6 +55,13 @@ def get_user_info(access_token):
     response.raise_for_status()
     user = response.json()
     return user
+
+
+def get_member(user_id: str) -> Dict:
+    response = requests.get(
+        f'{API_BASE}/guilds/{SERVER_ID}/members/{user_id}', headers=HEADERS)
+    response.raise_for_status()
+    return response.json()
 
 
 def get_user_guids(access_token: str):
