@@ -6,6 +6,14 @@ Current organizations using it:
 - ITWS
 - RCOS
 
+## Deploy
+
+> Want to use this for your RPI Discord server? Reach out to me Frank Matranga '22 and I can host it for free for you.
+
+### Create Discord Bot
+
+Create a Discord application and bot user. Add it to the desired server with administrator permissions. (More detail coming)
+
 ### Environment Variables
 - `SITE_TITLE` - Custom website title
 - `DISCORD_SERVER_ID` - ID of Discord server
