@@ -4,7 +4,7 @@ from flask_cas import CAS, login_required, logout
 import urllib.parse
 from dotenv import load_dotenv
 
-from discord import OAUTH_URL, VERIFIED_ROLE_ID, SERVER_ID, get_tokens, get_user_info, add_user_to_server, add_role_to_member, set_member_nickname
+from discord import OAUTH_URL, VERIFIED_ROLE_ID, SERVER_ID, get_tokens, get_user_info, get_member, add_user_to_server, add_role_to_member, set_member_nickname
 import requests
 
 # Load .env into os.environ
@@ -67,8 +67,11 @@ def discord_callback():
     # Exchange authorization code for tokens
     tokens = get_tokens(authorization_code)
 
+    session['tokens'] = tokens
+
     # Get info on the Discord user that just connected (really only need id)
     discord_user = get_user_info(tokens['access_token'])
+    session['discord_user_id'] = discord_user['id']
 
     # Add them to the server
     add_user_to_server(tokens['access_token'], discord_user['id'], nickname)
