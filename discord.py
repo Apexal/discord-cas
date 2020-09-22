@@ -1,6 +1,6 @@
 from http.client import responses
 import os
-from typing import Dict
+from typing import Dict, List
 import requests
 from dotenv import load_dotenv
 load_dotenv()
@@ -99,6 +99,14 @@ def set_member_nickname(user_id: str, nickname: str):
                               )
     response.raise_for_status()
     return response
+
+
+def get_server_roles() -> List[Dict]:
+    '''Retrieve all of the roles on the server.'''
+    response = requests.get(
+        f'{API_BASE}/guilds/{SERVER_ID}/roles', headers=HEADERS)
+    response.raise_for_status()
+    return response.json()
 
 
 def add_role_to_member(user_id: str, role_id: str):
