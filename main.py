@@ -4,7 +4,7 @@ from flask_cas import CAS, login_required, logout
 import urllib.parse
 from dotenv import load_dotenv
 
-from discord import OAUTH_URL, VERIFIED_ROLE_ID, SERVER_ID, get_tokens, get_user_info, get_member, add_user_to_server, add_role_to_member, set_member_nickname
+from discord import OAUTH_URL, VERIFIED_ROLE_ID, SERVER_ID, get_server_roles, get_tokens, get_user_info, get_member, add_user_to_server, add_role_to_member, remove_role_from_member, set_member_nickname
 import requests
 
 # Load .env into os.environ
@@ -95,6 +95,66 @@ def discord_callback():
             f'Failed to add role to {cas.username} on server: {e}')
 
     return render_template('joined.html', rcs_id=cas.username.lower(), nickname=nickname, discord_server_id=SERVER_ID)
+
+
+@app.route('/roles', methods=['GET', 'POST'])
+@login_required
+def roles():
+    server_roles = get_server_roles()
+
+    def role_id_from_name(name):
+        return next(role for role in server_roles if role['name'] == name)['id']
+
+    discord_member = get_member(session['discord_user_id'])
+
+    offered_roles = {
+        'course_intro': {
+            'title': 'Intro to ITWS',
+            'role_id': role_id_from_name('Intro to ITWS'),
+            'test': lambda member: True
+        }
+    }
+
+    # # Intro to ITWS group roles
+    for i in range(1, 4):
+        offered_roles[f'team_{i}'] = {
+            'title': f'Intro Team {i}',
+            'role_id': role_id_from_name(f'Intro Team {i}'),
+            'test': lambda member: offered_roles['course_intro']['role_id'] in member['roles']
+        }
+
+    # Roles that the member can add
+    addable_roles = dict(filter(
+        lambda item: item[1]['role_id'] not in discord_member['roles'] and item[1]['test'](discord_member), offered_roles.items()))
+
+    # Roles that the member can remove
+    removeable_roles = dict(filter(
+        lambda item: item[1]['role_id'] in discord_member['roles'], offered_roles.items()))
+
+    if request.method == 'POST':
+        action = request.args.get('action')
+
+        if action == 'add_role':
+            role = request.args.get('role')
+            match = offered_roles[role]
+
+            if not match['test'](discord_member):
+                raise Exception('You do not have permission to add that role.')
+
+            add_role_to_member(discord_member['user']['id'], match['role_id'])
+
+            return 'Added role!'
+        elif action == 'remove_role':
+            role = request.args.get('role')
+            match = offered_roles[role]
+
+            remove_role_from_member(
+                discord_member['user']['id'], match['role_id'])
+
+            return 'Removed role!'
+        return 'Unknown action'
+    else:
+        return render_template('roles.html', addable_roles=addable_roles, removeable_roles=removeable_roles)
 
 
 @app.errorhandler(Exception)

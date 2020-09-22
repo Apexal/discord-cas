@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="rpi-page-title">Your Roles</h1>
+
+<div style="display: flex">
+  <div style="flex: 1">
+    <h3 class="rpi-h3">Add</h3>
+    {% for id in addable_roles %}
+    <form method="POST" action="/roles?action=add_role&role={{ id }}">
+      <button>{{ addable_roles[id]['title'] }}</button>
+    </form>
+    {% endfor %}
+  </div>
+
+  <div style="flex: 1">
+    <h3 class="rpi-h3">Remove</h3>
+    {% for id in removeable_roles %}
+    <form method="POST" action="/roles?action=remove_role&role={{ id }}">
+      <button>{{ removeable_roles[id]['title'] }}</button>
+    </form>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
