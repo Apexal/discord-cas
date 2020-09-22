@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 from discord import OAUTH_URL, VERIFIED_ROLE_ID, SERVER_ID, get_tokens, get_user_info, get_member, add_user_to_server, add_role_to_member, kick_member_from_server, set_member_nickname
 import requests
 
-db = redis.Redis(charset="utf-8", decode_responses=True)
+db = redis.from_url(os.environ.get('REDIS_URL'),
+                    charset='utf-8', decode_responses=True)
 
 # Load .env into os.environ
 load_dotenv()
