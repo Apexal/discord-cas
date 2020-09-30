@@ -3,12 +3,13 @@ import redis
 import json
 from flask import Flask, g, session, request, render_template, redirect, url_for
 from flask_cas import CAS, login_required, logout
-import urllib.parse
 from dotenv import load_dotenv
+from werkzeug.exceptions import HTTPException
 
 from discord import OAUTH_URL, VERIFIED_ROLE_ID, SERVER_ID, get_tokens, get_user_info, get_member, add_user_to_server, add_role_to_member, kick_member_from_server, set_member_nickname
 import requests
 
+# Connect to Redis
 db = redis.from_url(os.environ.get('REDIS_URL'),
                     charset='utf-8', decode_responses=True)
 
@@ -28,9 +29,11 @@ app.config['CAS_AFTER_LOGIN'] = '/'
 @login_required
 def index():
     if request.method == 'GET':
+        # If member is already verified, redirect to joined page
         if db.sismember('verified', cas.username):
             return redirect(url_for('joined'))
 
+        # User profile might be in DB already if reconnected and disconnected
         user = {}
         if db.get('users:' + cas.username) != None:
             user = json.loads(db.get('users:' + cas.username))
@@ -127,6 +130,7 @@ def discord_callback():
 def reset_discord():
     discord_user_id = db.get('discord_user_ids:' + cas.username)
 
+    # Attempt to kick member from server and then remove DB records
     try:
         kick_member_from_server(discord_user_id)
         db.delete('discord_user_ids:' + cas.username)
@@ -147,13 +151,25 @@ def joined():
     return render_template('joined.html', rcs_id=cas.username.lower(), user=user, discord_server_id=SERVER_ID)
 
 
+@app.errorhandler(404)
+def page_not_found(e):
+    '''Render 404 page.'''
+    return render_template('404.html'), 404
+
+
 @app.errorhandler(Exception)
-def handle_error(e):
+def handle_exception(e):
+    '''Handles all unhandled exceptions.'''
+
+    # Handle HTTP errors
+    if isinstance(e, HTTPException):
+        return render_template('error.html', error=e), e.code
+
+    # Handle non-HTTP errors
     app.logger.exception(e)
 
-    # Hide error in production
-    error = e
-    if app.env == 'production' and not e.name == 'Not Found':
-        error = 'Something went wrong... Please try again later.'
+    # Hide error details in production
+    if app.env == 'production':
+        e = 'Something went wrong... Please try again later.'
 
-    return render_template('error.html', error=error), 500
+    return render_template('error.html', error=e), 500
