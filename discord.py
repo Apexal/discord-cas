@@ -16,7 +16,7 @@ HEADERS = {
     'Authorization': 'Bot ' + BOT_TOKEN,
 }
 
-OAUTH_URL = f'https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&response_type=code&scope=guilds%20guilds.join%20identify'
+OAUTH_URL = f'https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&response_type=code&scope=guilds.join%20identify'
 
 
 def get_tokens(code):
@@ -61,13 +61,6 @@ def get_member(user_id: str) -> Dict:
     '''Retreive a server member. Includes the user, their server nickname, roles, etc.'''
     response = requests.get(
         f'{API_BASE}/guilds/{SERVER_ID}/members/{user_id}', headers=HEADERS)
-    response.raise_for_status()
-    return response.json()
-
-
-def get_user_guilds(access_token: str):
-    '''Retrieve the servers a user is on.'''
-    response = requests.get(f'{API_BASE}/users/@me/guilds', headers=HEADERS)
     response.raise_for_status()
     return response.json()
 
