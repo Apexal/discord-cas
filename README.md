@@ -5,6 +5,7 @@ A simple Flask application that allows RPI members to link their Discord account
 Current organizations using it:
 - ITWS
 - RCOS
+- NSBE
 
 ## Deploy
 
@@ -17,7 +18,7 @@ Create a Discord application and bot user. Add it to the desired server with adm
 ### Environment Variables
 - `SITE_TITLE` - Custom website title
 - `DISCORD_SERVER_ID` - ID of Discord server
-- `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI` - From the Discord Developers page for your application
+- `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, `DISCORD_BOT_TOKEN` - From the Discord Developers page for your application
 - `DISCORD_VERIFIED_ROLE_ID` - ID of the role to add to members when they connect their account
 - `FLASK_SECRET_KEY` - Randomly generated secret key for Flask
 - `REDIS_URL` - Url to Redis server
