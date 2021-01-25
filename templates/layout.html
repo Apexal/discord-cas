@@ -4,23 +4,36 @@
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>{{ config['SITE_TITLE'] }}</title>
+    <title>{% if client %}{{ client.title }}{% else %}Discord CAS Connector{% endif %}</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
 
     <!-- Frank Matranga's RPI CSS classes -->
     <link rel="stylesheet" href="https://apexal.github.io/rpi-css/rpi.css">
+    <style>
+        .stage {
+            background-color: var(--rpi-darkred);
+            color: white;
+            padding: 10px;
+            /* border-radius: 10px; */
+            margin-bottom: 10px;
+        }
+
+        a.reset-link {
+            text-decoration: none;
+            float: right;
+        }
+    </style>
 </head>
 
 <body>
     <header class="rpi-navbar">
-        <span class="navbar-brand">{{ config['SITE_TITLE'] }}</span>
+        <span class="navbar-brand">{% if client %}{{ client.title }}{% else %}Discord CAS Connector{% endif %}</span>
     </header>
     <main class="rpi-card">
         {% if alert %}
         <div class="rpi-alert">{{ alert }}</div>
         {% endif %}
         {% block content %}{% endblock %}
-
         <details>
             <summary class="rpi-h2">What is this site?</summary>
             This is not an official RPI service. It is an open-source webapp developed by students. The source code is
