@@ -5,7 +5,7 @@
 
 {% if profile %}
 <div class="stage user-profile">
-    Profile set as <strong>{{ profile.first_name }} {{ profile.last_name }} '{{ profile.graduation_year }}</strong> <a class="reset-link" href="{{ url_for('reset_profile') }}">✏️</a>
+    Profile set as <strong>{{ profile.first_name }} {{ profile.last_name }} {{ profile.graduation_year }}</strong> <a class="reset-link" href="{{ url_for('reset_profile') }}">✏️</a>
 </div>
     {% if discord_user %}
     <div class="stage discord-user">
