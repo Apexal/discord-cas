@@ -2,5 +2,5 @@
 {% block content %}
 <h1 class="rpi-page-title">An Error Occurred</h1>
 <p>{{ error }}</p>
-<a href="/" class="rpi-button">Home</a>
+<a href="{{ url_for('index', client_id=client_id) }}" class="rpi-button">Home</a>
 {% endblock %}
