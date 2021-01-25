@@ -28,6 +28,7 @@ app.config['CAS_AFTER_LOGIN'] = 'index'
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
+    app.logger.info('HOME PAGE REQUEST')
     if request.method == 'GET':
         # If member is already verified, redirect to joined page
         if db.sismember('verified', cas.username):
@@ -60,6 +61,7 @@ def index():
 @app.route('/discord/callback', methods=['GET'])
 @login_required
 def discord_callback():
+    app.logger.info('DISCORD CALLBACK REQUEST')
     # Extract code or error from URL
     authorization_code = request.args.get('code')
     error = request.args.get('error')
@@ -145,7 +147,9 @@ def reset_discord():
 @app.route('/joined')
 @login_required
 def joined():
+    app.logger.info('JOINED REQUEST')
     if not db.sismember('verified', cas.username):
+        app.logger.info('REDIRECT TO / REQUEST')
         return redirect('/')
     user = json.loads(db.get('users:' + cas.username))
     return render_template('joined.html', rcs_id=cas.username.lower(), user=user, discord_server_id=SERVER_ID)
