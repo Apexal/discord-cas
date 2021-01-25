@@ -9,9 +9,11 @@ from werkzeug.exceptions import HTTPException
 from discord import OAUTH_URL, VERIFIED_ROLE_ID, SERVER_ID, get_tokens, get_user_info, get_member, add_user_to_server, add_role_to_member, kick_member_from_server, set_member_nickname
 import requests
 
+print("CONNECTING TO REDIS")
 # Connect to Redis
 db = redis.from_url(os.environ.get('REDIS_URL'),
                     charset='utf-8', decode_responses=True)
+print("CONNECTED TO REDIS")
 
 # Load .env into os.environ
 load_dotenv()
@@ -31,9 +33,11 @@ def index():
     app.logger.info('HOME PAGE REQUEST')
     if request.method == 'GET':
         # If member is already verified, redirect to joined page
+        print("BEFORE REDIS")
         if db.sismember('verified', cas.username):
+            print("IN IF")
             return redirect(url_for('joined'))
-
+        print("AFTER REDIS")
         # User profile might be in DB already if reconnected and disconnected
         user = {}
         if db.get('users:' + cas.username) != None:
