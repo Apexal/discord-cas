@@ -26,6 +26,14 @@ app.config['SITE_TITLE'] = os.environ.get('SITE_TITLE')
 app.config['CAS_SERVER'] = 'https://cas-auth.rpi.edu/cas'
 app.config['CAS_AFTER_LOGIN'] = 'index'
 
+@app.route('/test')
+def test():
+    return 'Testing'
+
+@app.route('/test_redis')
+def test_redis():
+    val = db.get('test')
+    return 'Testing redis: ' + val
 
 @app.route('/', methods=['GET', 'POST'])
 @login_required
