@@ -1,0 +1,20 @@
+dev_test:
+  title: Dev Test Discord Server
+  discord:
+    server_id: 303952447712395264
+    verified_role_ids:
+      - 745826155529109624
+
+itws:
+  title: ITWS Discord Server
+  discord:
+    server_id: 735867785879748709
+    verified_role_ids:
+      - 756215715362504835
+  
+rcos:
+  title: RCOS Discord Server
+  discord:
+    server_id: 738593165438746634
+    verified_role_ids:
+      - 745816228790009877
