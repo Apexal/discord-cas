@@ -4,7 +4,7 @@ CREATE TABLE "users" (
   "first_name" varchar NOT NULL,
   "last_name" varchar NOT NULL,
   "graduation_year" int,
-  "discord_user_id" int
+  "discord_user_id" varchar
 );
 
 COMMENT ON COLUMN "users"."rcs_id" IS 'RPI username of user from CAS';

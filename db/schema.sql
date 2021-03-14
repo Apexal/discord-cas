@@ -18,17 +18,24 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE public.clients (
-    client_id integer NOT NULL,
+    client_id character varying NOT NULL,
     is_enabled boolean DEFAULT true NOT NULL,
     name character varying NOT NULL,
     welcome_message text,
-    discord_server_id integer NOT NULL,
-    discord_rpi_role_id integer NOT NULL,
-    discord_non_rpi_role_id integer,
+    discord_server_id character varying NOT NULL,
+    discord_rpi_role_id character varying NOT NULL,
+    discord_non_rpi_role_id character varying,
     contact_information character varying,
     is_rcs_id_in_nickname boolean DEFAULT true NOT NULL,
     is_public boolean DEFAULT false NOT NULL
 );
+
+
+--
+-- Name: COLUMN clients.client_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.clients.client_id IS 'ID of client to use in URL';
 
 
 --
@@ -88,26 +95,6 @@ COMMENT ON COLUMN public.clients.is_public IS 'Whether the server of the client 
 
 
 --
--- Name: clients_client_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.clients_client_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: clients_client_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.clients_client_id_seq OWNED BY public.clients.client_id;
-
-
---
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -125,7 +112,7 @@ CREATE TABLE public.users (
     first_name character varying NOT NULL,
     last_name character varying NOT NULL,
     graduation_year integer,
-    discord_user_id integer
+    discord_user_id character varying
 );
 
 
@@ -162,13 +149,6 @@ COMMENT ON COLUMN public.users.graduation_year IS 'Null for non-students hopeful
 --
 
 COMMENT ON COLUMN public.users.discord_user_id IS 'Unique ID of Discord user once connected';
-
-
---
--- Name: clients client_id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.clients ALTER COLUMN client_id SET DEFAULT nextval('public.clients_client_id_seq'::regclass);
 
 
 --

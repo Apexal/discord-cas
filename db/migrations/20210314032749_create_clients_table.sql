@@ -1,17 +1,18 @@
 -- migrate:up
 CREATE TABLE "clients" (
-  "client_id" SERIAL PRIMARY KEY,
+  "client_id" varchar PRIMARY KEY,
   "is_enabled" boolean NOT NULL DEFAULT true,
   "name" varchar NOT NULL,
   "welcome_message" text,
-  "discord_server_id" int NOT NULL,
-  "discord_rpi_role_id" int NOT NULL,
-  "discord_non_rpi_role_id" int,
+  "discord_server_id" varchar NOT NULL,
+  "discord_rpi_role_id" varchar NOT NULL,
+  "discord_non_rpi_role_id" varchar,
   "contact_information" varchar,
   "is_rcs_id_in_nickname" boolean NOT NULL DEFAULT true,
   "is_public" boolean NOT NULL DEFAULT false
 );
 
+COMMENT ON COLUMN "clients"."client_id" IS 'ID of client to use in URL';
 COMMENT ON COLUMN "clients"."is_enabled" IS 'Whether users can currently join through this portal';
 COMMENT ON COLUMN "clients"."name" IS 'Public-facing name';
 COMMENT ON COLUMN "clients"."welcome_message" IS 'Optional display message on client page';
