@@ -11,7 +11,7 @@ import yaml
 import requests
 
 from discord import BOT_JOIN_URL, OAUTH_URL, get_member, get_tokens, get_user, get_user_info, add_user_to_server, add_role_to_member, kick_member_from_server, set_member_nickname
-from db import conn_pool, fetch_client, fetch_clients
+from db import add_client, conn_pool, delete_client, fetch_client, fetch_clients
 
 # Connect to Redis
 db = redis.from_url(os.environ.get('REDIS_URL'),
@@ -31,11 +31,13 @@ app.config['CAS_SERVER'] = 'https://cas-auth.rpi.edu/cas/login'
 app.config['CAS_AFTER_LOGIN'] = 'index'
 app.config['ADMIN_RCS_IDS'] = os.environ.get('ADMIN_RCS_IDS').split(',')
 
+
 def get_conn():
     print('Get DB')
     if 'db' not in g:
         g.db = conn_pool.getconn()
     return g.db
+
 
 @app.teardown_appcontext
 def close_conn(e):
@@ -69,37 +71,58 @@ def add_template_locals():
     }
 
 
-@app.route('/admin')
+@app.route('/admin', methods=['GET', 'POST'])
 @login_required
 def admin():
     # Check if user is admin
     if g.username not in app.config['ADMIN_RCS_IDS']:
         abort(403)
-    
+
     conn = get_conn()
-    clients = fetch_clients(conn)
 
-    return render_template('admin/index.html', clients=clients)
+    if request.method == 'GET':
+        clients = fetch_clients(conn)
+        return render_template('admin/index.html', clients=clients)
+    else:
+        # Add client
+        print(dict(request.form))
+        add_client(conn, request.form)
+        return redirect(url_for('admin'))
 
-@app.route('/admin/<string:client_id>')
+@app.route('/admin/<string:client_id>', methods=['GET', 'POST'])
 @login_required
 def admin_client(client_id: str):
     # Check if user is admin
     if g.username not in app.config['ADMIN_RCS_IDS']:
         abort(403)
-    
+
     conn = get_conn()
     client = fetch_client(conn, client_id)
 
-    return render_template('admin/client.html', client=client)
+    if not client:
+        abort(404)
+
+    if request.method == 'GET':
+        return render_template('admin/client.html', client=client)
+    else:
+        action = request.form.get('action')
+        if action == 'delete':
+            delete_client(conn, client_id)
+            return redirect(url_for('admin'))
+        elif action == 'edit':
+            pass
+            return redirect(url_for('admin_client', client_id=client_id))
+
 
 @app.route('/')
 def splash():
     return render_template('splash.html', bot_join_url=BOT_JOIN_URL)
 
+
 @app.route('/bot_invite')
 def bot_invite():
     return redirect(BOT_JOIN_URL)
+
 
 @app.route('/<string:client_id>', methods=['GET'])
 @login_required
@@ -172,7 +195,8 @@ def profile():
 
             # Set their nickname
             try:
-                set_member_nickname(server_id, discord_account_id, new_nickname)
+                set_member_nickname(
+                    server_id, discord_account_id, new_nickname)
                 app.logger.info(
                     f'Updated {g.username}\'s nickname to "{new_nickname}" on server')
             except requests.exceptions.HTTPError as e:

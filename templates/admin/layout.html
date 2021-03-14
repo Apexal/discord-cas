@@ -13,7 +13,26 @@
         .rpi-container {
             margin-top: 2em;
         }
+
+        .rpi-select {
+            display: block;
+        }
+
+        form {
+            margin: 2em 0;
+            padding: 2em;
+            border: 2px solid var(--rpi-darkblue);
+        }
+
+        form .rpi-field:last-of-type {
+            margin-bottom: 2em;
+        }
+
+        form > h2 {
+            margin-top: 0;
+        }
     </style>
+    {% block head %}{% endblock %}
 </head>
 
 <body>

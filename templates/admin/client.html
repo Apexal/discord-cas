@@ -3,7 +3,15 @@
 
 <h1 class="rpi-page-title">Edit {{ client["name"] }}</h1>
 <h2 class="rpi-page-subtitle">Created {{ client["created_at"] }}</h2>
+<form action="{{ url_for('admin_client', client_id=client['client_id']) }}" method="POST">
+    <input type="hidden" name="action" value="edit">
 
-<button class="rpi-button">Save</button>
-<button class="rpi-button red">Delete</button>
+    <button class="rpi-button" type="submit">Save</button>
+</form>
+
+
+<form action="{{ url_for('admin_client', client_id=client['client_id']) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete {{ client.name }}?')">
+    <input type="hidden" name="action" value="delete">
+    <button class="rpi-button red" type="submit">Delete</button>
+</form>
 {% endblock %}
