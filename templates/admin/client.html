@@ -1,0 +1,9 @@
+{% extends "admin/layout.html" %}
+{% block content %}
+
+<h1 class="rpi-page-title">Edit {{ client["name"] }}</h1>
+<h2 class="rpi-page-subtitle">Created {{ client["created_at"] }}</h2>
+
+<button class="rpi-button">Save</button>
+<button class="rpi-button red">Delete</button>
+{% endblock %}

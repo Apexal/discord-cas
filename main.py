@@ -81,6 +81,17 @@ def admin():
 
     return render_template('admin/index.html', clients=clients)
 
+@app.route('/admin/<string:client_id>')
+@login_required
+def admin_client(client_id: str):
+    # Check if user is admin
+    if g.username not in app.config['ADMIN_RCS_IDS']:
+        abort(403)
+    
+    conn = get_conn()
+    client = fetch_client(conn, client_id)
+
+    return render_template('admin/client.html', client=client)
 
 @app.route('/')
 def splash():
