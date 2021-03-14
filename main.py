@@ -1,5 +1,7 @@
 import os
 
+from requests.api import get
+
 from utils import hget_json
 import redis
 import json
@@ -11,7 +13,7 @@ import yaml
 import requests
 
 from discord import BOT_JOIN_URL, OAUTH_URL, get_member, get_tokens, get_user, get_user_info, add_user_to_server, add_role_to_member, kick_member_from_server, set_member_nickname
-from db import add_client, conn_pool, delete_client, fetch_client, fetch_clients
+from db import add_client, conn_pool, delete_client, delete_user, fetch_client, fetch_clients, fetch_user, upsert_user
 
 # Connect to Redis
 db = redis.from_url(os.environ.get('REDIS_URL'),
@@ -33,7 +35,6 @@ app.config['ADMIN_RCS_IDS'] = os.environ.get('ADMIN_RCS_IDS').split(',')
 
 
 def get_conn():
-    print('Get DB')
     if 'db' not in g:
         g.db = conn_pool.getconn()
     return g.db
@@ -41,7 +42,6 @@ def get_conn():
 
 @app.teardown_appcontext
 def close_conn(e):
-    print('Close conn')
     db = g.pop('db', None)
     if db:
         conn_pool.putconn(db)
@@ -53,9 +53,8 @@ def before_request():
 
     # Everything added to g can be accessed during the request
     g.is_logged_in = cas.username is not None
-    g.username = cas.username.lower() if g.is_logged_in else None
-    g.client_id = session['client_id'] if 'client_id' in session else None
-    g.client = clients[g.client_id] if g.client_id is not None else None
+    g.rcs_id = cas.username.lower() if g.is_logged_in else None
+    g.client_id = session.get('client_id')
 
 
 @app.context_processor
@@ -65,9 +64,7 @@ def add_template_locals():
     # Add keys here
     return {
         'is_logged_in': g.is_logged_in,
-        'username': g.username,
-        'client_id': g.client_id,
-        'client': g.client
+        'rcs_id': g.rcs_id
     }
 
 
@@ -75,7 +72,7 @@ def add_template_locals():
 @login_required
 def admin():
     # Check if user is admin
-    if g.username not in app.config['ADMIN_RCS_IDS']:
+    if g.rcs_id not in app.config['ADMIN_RCS_IDS']:
         abort(403)
 
     conn = get_conn()
@@ -85,15 +82,14 @@ def admin():
         return render_template('admin/index.html', clients=clients)
     else:
         # Add client
-        print(dict(request.form))
-        add_client(conn, request.form)
+        new_client = add_client(conn, request.form)
         return redirect(url_for('admin'))
 
 @app.route('/admin/<string:client_id>', methods=['GET', 'POST'])
 @login_required
 def admin_client(client_id: str):
     # Check if user is admin
-    if g.username not in app.config['ADMIN_RCS_IDS']:
+    if g.rcs_id not in app.config['ADMIN_RCS_IDS']:
         abort(403)
 
     conn = get_conn()
@@ -126,16 +122,14 @@ def bot_invite():
 
 @app.route('/<string:client_id>', methods=['GET'])
 @login_required
-def index(client_id):
-    if client_id not in clients:
+def index(client_id: str):
+    # Set client
+    conn = get_conn()
+    client = fetch_client(conn, client_id)
+    if client is None:
         abort(404, 'Unknown Client')
 
-    # Set client
-    client = clients[client_id]
-    g.client_id = client_id
-    g.client = client
     session['client_id'] = client_id
-
     # Determine status of user
     # Users can:
     # 1) Not have connected to Discord
@@ -144,17 +138,21 @@ def index(client_id):
     # 4) Joined the server (after 1 and 2)
 
     # Only exists if user has set profile
-    profile = hget_json(db, 'profiles', g.username)
+    user = fetch_user(conn, g.rcs_id)
 
     # Only exists if user has connected Discord account
-    discord_account_id = db.hget('discord_account_ids', g.username)
+    discord_account_id = user['discord_user_id'] if user else None
     discord_user = get_user(discord_account_id) if discord_account_id else None
 
     # Only exists if user has joined server
     discord_member = get_member(
         client['discord']['server_id'], discord_account_id) if discord_user else None
 
-    return render_template('index.html', profile=profile, discord_user=discord_user, discord_member=discord_member, discord_oauth_url=OAUTH_URL, rcs_id=g.username)
+    print(user)
+    print(client)
+    print(discord_account_id)
+
+    return render_template('index.html', client=client, user=user, discord_user=discord_user, discord_member=discord_member, discord_oauth_url=OAUTH_URL, rcs_id=g.rcs_id)
 
 
 @app.route('/profile', methods=['POST'])
@@ -164,19 +162,18 @@ def profile():
         first_name = request.form['first_name'].strip()
         last_name = request.form['last_name'].strip()
         graduation_year = request.form['graduation_year'].strip()
-        # timezone = request.form['timezone']
 
         profile = {
             'first_name': first_name,
             'last_name': last_name,
             'graduation_year': graduation_year,
-            # 'timezone': timezone
         }
-        db.hset('profiles', g.username, json.dumps(profile))
+        conn = get_conn()
+        user = upsert_user(conn, g.rcs_id, profile)
 
         # If user has joined Discord server, change their nickname
         # Only exists if user has connected Discord account
-        discord_account_id = db.hget('discord_account_ids', g.username)
+        discord_account_id = user["discord_user_id"]
         discord_user = get_user(
             discord_account_id) if discord_account_id else None
 
@@ -189,7 +186,7 @@ def profile():
             # e.g. "Frank M '22 (matraf)"
             new_nickname = profile['first_name'][:20] + ' ' + \
                 profile['last_name'][0] + " '" + profile['graduation_year'][2:] + \
-                f' ({g.username})'
+                f' ({g.rcs_id})'
 
             server_id = g.client['discord']['server_id']
 
@@ -198,10 +195,10 @@ def profile():
                 set_member_nickname(
                     server_id, discord_account_id, new_nickname)
                 app.logger.info(
-                    f'Updated {g.username}\'s nickname to "{new_nickname}" on server')
+                    f'Updated {g.rcs_id}\'s nickname to "{new_nickname}" on server')
             except requests.exceptions.HTTPError as e:
                 app.logger.warning(
-                    f'Failed to UPDATE nickname "{new_nickname}" to {g.username} on {g.client_id} server: {e}')
+                    f'Failed to UPDATE nickname "{new_nickname}" to {g.rcs_id} on {session["client"]["client_id"]} server: {e}')
 
         return redirect(url_for('index', client_id=g.client_id))
 
@@ -210,8 +207,9 @@ def profile():
 @login_required
 def reset_profile():
     # Attempt to kick member from server and then remove DB records
-    db.hdel('profiles', g.username)
 
+    delete_user(get_conn(), g.rcs_id)
+    print(session)
     return redirect(url_for('index', client_id=g.client_id))
 
 
@@ -221,16 +219,19 @@ def join():
     verified_role_ids = g.client['discord']['verified_role_ids']
 
     # Get profile
-    profile = hget_json(db, 'profiles', g.username)
+    conn = get_conn()
+    user = fetch_user(conn, g.rcs_id)
+    # profile = hget_json(db, 'profiles', g.rcs_id)
 
     # Generate nickname as "<first name> <last name initial> '<2 digit graduation year> (<rcs id>)"
     # e.g. "Frank M '22 (matraf)"
-    nickname = profile['first_name'][:20] + ' ' + \
-        profile['last_name'][0] + " '" + profile['graduation_year'][2:] + \
-        f' ({g.username})'
+    nickname = user['first_name'][:20] + ' ' + \
+        user['last_name'][0] + " '" + user['graduation_year'][2:] + \
+        f' ({g.rcs_id})'
 
-    discord_user_id = db.hget('discord_account_ids', g.username)
-    tokens = hget_json(db, 'discord_account_tokens', g.username)
+    # discord_user_id = db.hget('discord_account_ids', g.rcs_id)
+    discord_user_id = user['discord_user_id']
+    tokens = hget_json(db, 'discord_account_tokens', g.rcs_id)
 
     print('discord_user_id', discord_user_id)
     print('tokens', tokens)
@@ -239,25 +240,25 @@ def join():
     # Add them to the server
     add_user_to_server(server_id, tokens['access_token'],
                        discord_user_id, nickname, verified_role_ids)
-    app.logger.info(f'Added {g.username} to {g.client["title"]} server')
+    app.logger.info(f'Added {g.rcs_id} to {g.client["title"]} server')
 
     # Set their nickname
     try:
         set_member_nickname(server_id, discord_user_id, nickname)
         app.logger.info(
-            f'Set {g.username}\'s nickname to "{nickname}" on server')
+            f'Set {g.rcs_id}\'s nickname to "{nickname}" on server')
     except requests.exceptions.HTTPError as e:
         app.logger.warning(
-            f'Failed to set nickname "{nickname}" to {g.username} on {g.client_id} server: {e}')
+            f'Failed to set nickname "{nickname}" to {g.rcs_id} on {session["client"]["client_id"]} server: {e}')
 
     # Give them the verified roles
     for role_id in verified_role_ids:
         try:
             add_role_to_member(server_id, discord_user_id, role_id)
-            app.logger.info(f'Added verified role to {g.username} on server')
+            app.logger.info(f'Added verified role to {g.rcs_id} on server')
         except requests.exceptions.HTTPError as e:
             app.logger.warning(
-                f'Failed to add role to {g.username} on server: {e}')
+                f'Failed to add role to {g.rcs_id} on server: {e}')
 
     return redirect(url_for('index', client_id=g.client_id))
 
@@ -273,13 +274,13 @@ def discord_callback():
         # Handle the special case where the user declined to connect
         if error == 'access_denied':
             app.logger.error(
-                f'{g.username} declined to connect their Discord account')
+                f'{g.rcs_id} declined to connect their Discord account')
             return render_template('error.html', error='You declined to connect your Discord account!')
         else:
             # Handle generic Discord error
             error_description = request.args.get('error_description')
             app.logger.error(
-                f'An error occurred on the Discord callback for {g.username}: {error_description}')
+                f'An error occurred on the Discord callback for {g.rcs_id}: {error_description}')
             raise Exception(error_description)
 
     # Exchange authorization code for tokens
@@ -291,8 +292,8 @@ def discord_callback():
     print('discord_user', discord_user)
 
     # Save to DB
-    db.hset('discord_account_ids', g.username, discord_user['id'])
-    db.hset('discord_account_tokens', g.username, json.dumps(tokens))
+    db.hset('discord_account_ids', g.rcs_id, discord_user['id'])
+    db.hset('discord_account_tokens', g.rcs_id, json.dumps(tokens))
 
     return redirect(url_for('index', client_id=g.client_id))
 
@@ -300,14 +301,14 @@ def discord_callback():
 @app.route('/discord/reset')
 @login_required
 def reset_discord():
-    discord_user_id = db.hget('discord_account_ids', g.username)
+    discord_user_id = db.hget('discord_account_ids', g.rcs_id)
     server_id = g.client['discord']['server_id']
 
     print('discord_user_id', discord_user_id)
 
     # Attempt to kick member from server and then remove DB records
-    db.hdel('discord_account_ids', g.username)
-    db.hdel('discord_account_tokens', g.username)
+    db.hdel('discord_account_ids', g.rcs_id)
+    db.hdel('discord_account_tokens', g.rcs_id)
     print('discord_user_id', discord_user_id)
     try:
         kick_member_from_server(server_id, discord_user_id)

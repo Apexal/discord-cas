@@ -34,7 +34,7 @@
 
 <body>
     <header class="rpi-navbar">
-        <span class="navbar-brand">{% if client %}{{ client.title }}{% else %}Discord CAS Connector{% endif %}</span>
+        <span class="navbar-brand">{% if client %}{{ client.name }} | {% endif %}Discord CAS Connector</span>
     </header>
     <main class="rpi-card">
         {% if alert %}

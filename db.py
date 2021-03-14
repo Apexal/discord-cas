@@ -3,14 +3,36 @@ import psycopg2.pool
 import psycopg2.extras
 import os
 
-conn_pool = psycopg2.pool.SimpleConnectionPool(minconn=1, maxconn=10, cursor_factory=psycopg2.extras.DictCursor, dsn=os.environ.get(
+conn_pool = psycopg2.pool.SimpleConnectionPool(minconn=1, maxconn=10, cursor_factory=psycopg2.extras.RealDictCursor, dsn=os.environ.get(
     'DATABASE_URL'))
 
 def fetch_user(conn, rcs_id: str):
     with conn.cursor() as cursor:
         cursor.execute("SELECT * FROM users WHERE rcs_id=%s LIMIT 1", (rcs_id,))
         return cursor.fetchone()
-    
+
+def upsert_user(conn, rcs_id: str, user_dict: Dict):
+    with conn.cursor() as cursor:
+        # Check if users exists
+        cursor.execute("SELECT * FROM users WHERE rcs_id=%s", (rcs_id,))
+        if cursor.fetchone():
+            # Update user
+            raise NotImplementedError()
+        else:
+            # New user
+            cursor.execute("""
+                INSERT INTO users (rcs_id, first_name, last_name, graduation_year)
+                VALUES (%(rcs_id)s, %(first_name)s, %(last_name)s, %(graduation_year)s)
+            """, {"rcs_id": rcs_id, **user_dict})
+        conn.commit()
+        cursor.execute("SELECT * FROM users WHERE rcs_id=%s", (rcs_id,))
+        return cursor.fetchone()
+
+def delete_user(conn, rcs_id: str):
+    with conn.cursor() as cursor:
+        cursor.execute("DELETE FROM users WHERE rcs_id=%s", (rcs_id,))
+        conn.commit()
+
 def fetch_clients(conn):
     with conn.cursor() as cursor:
         cursor.execute("SELECT * FROM clients ORDER BY created_at")
@@ -48,8 +70,9 @@ def add_client(conn, form: Dict):
             form.get('is_public') == 'on'
         ))
         conn.commit()
-        print("ADDED")
 
+        cursor.execute("SELECT * FROM clients WHERE client_id=%s", (form['client_id'],))
+        return cursor.fetchone()
 
 def delete_client(conn, client_id: str):
     with conn.cursor() as cursor:

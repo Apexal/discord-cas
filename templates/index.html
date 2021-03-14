@@ -1,12 +1,12 @@
 {% extends "layout.html" %}
 {% block content %}
-<h1 class="rpi-page-title">{{ client['title'] }}</h1>
+<h1 class="rpi-page-title">{{ client['name'] }}</h1>
 <p class="rpi-h2">You are logged in with CAS as <strong>{{ rcs_id }}@rpi.edu</strong> <a href="/cas/logout">(Logout)</a></p>
 
-{% if profile %}
-<div class="stage user-profile">
-    Profile set as <strong>{{ profile.first_name }} {{ profile.last_name }} {{ profile.graduation_year }}</strong> <a class="reset-link" href="{{ url_for('reset_profile') }}">✏️</a>
-</div>
+{% if user %}
+    <div class="stage user-profile">
+        Profile set as <strong>{{ user.first_name }} {{ user.last_name }} {{ user.graduation_year }}</strong> <a class="reset-link" href="{{ url_for('reset_profile') }}">✏️</a>
+    </div>
     {% if discord_user %}
     <div class="stage discord-user">
         Discord connected as <strong>{{ discord_user.username }}#{{ discord_user.discriminator }}</strong> <a class="reset-link" href="{{ url_for('reset_discord') }}">✏️</a>

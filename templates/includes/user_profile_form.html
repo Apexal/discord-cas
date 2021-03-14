@@ -1,24 +1,18 @@
 <form method="POST" style="margin-top: 2rem;" action="{{ url_for('profile') }}">
     <div class="field">
         <label class="rpi-label" for="first-name">First Name</label>
-        <input class="rpi-input" value="{{ profile['first_name'] }}" type="text" name="first_name" id="first-name"
+        <input class="rpi-input" value="{{ user['first_name'] }}" type="text" name="first_name" id="first-name"
             placeholder="Your given name or nickname" maxlength="20" required>
         <label class="rpi-label" for="last-name">Last Name</label>
-        <input class="rpi-input" value="{{ profile['last_name'] }}" type="text" name="last_name" id="last-name"
+        <input class="rpi-input" value="{{ user['last_name'] }}" type="text" name="last_name" id="last-name"
             placeholder="Your family name" required>
     </div>
 
     <div class="field">
         <label class="rpi-label" for="grad-year">Graduation Year</label>
-        <input class="rpi-input" value="{{ profile['graduation_year'] }}" type="number" name="graduation_year"
+        <input class="rpi-input" value="{{ user['graduation_year'] }}" type="number" name="graduation_year"
             id="grad-year" min="2000" max="2030" placeholder="What year will you graduate?" required>
     </div>
-
-    <!-- <div class="field">
-        <label class="rpi-label" for="grad-year">Timezone</label>
-        <input class="rpi-input" value="{{ profile['timezone'] }}" type="text" name="graduation_year"
-            id="grad-year" min="2000" max="2030" placeholder="What year will you graduate?" required>
-    </div> -->
 
     <button class="rpi-button is-fullwidth">Update Profile</button>
 </form>
