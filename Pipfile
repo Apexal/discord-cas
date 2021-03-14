@@ -15,6 +15,7 @@ requests = "*"
 gunicorn = "*"
 redis = "*"
 pyyaml = "*"
+psycopg2 = "*"
 
 [requires]
 python_version = "3.8"
