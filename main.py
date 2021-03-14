@@ -11,7 +11,7 @@ import yaml
 import requests
 
 from discord import BOT_JOIN_URL, OAUTH_URL, get_member, get_tokens, get_user, get_user_info, add_user_to_server, add_role_to_member, kick_member_from_server, set_member_nickname
-from db import conn_pool, fetch_clients
+from db import conn_pool, fetch_client, fetch_clients
 
 # Connect to Redis
 db = redis.from_url(os.environ.get('REDIS_URL'),
@@ -67,6 +67,19 @@ def add_template_locals():
         'client_id': g.client_id,
         'client': g.client
     }
+
+
+@app.route('/admin')
+@login_required
+def admin():
+    # Check if user is admin
+    if g.username not in app.config['ADMIN_RCS_IDS']:
+        abort(403)
+    
+    conn = get_conn()
+    clients = fetch_clients(conn)
+
+    return render_template('admin/index.html', clients=clients)
 
 
 @app.route('/')

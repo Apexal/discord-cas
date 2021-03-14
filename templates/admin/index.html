@@ -1,0 +1,43 @@
+{% extends "admin/layout.html" %}
+{% block content %}
+
+<h1 class="rpi-page-title">Administration</h1>
+<h2 class="rpi-page-subtitle">Manage clients and users</h2>
+
+<div class="clients">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Server</th>
+                <th>Public?</th>
+                <th>Created At</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for client in clients %}
+            <tr class="{% if not client['is_enabled'] %}client-disabled{% endif %}">
+                <td>{{ client["client_id"] }}</td>
+                <td>{{ client["name"] }}</td>
+                <td><a href="https://discord.com/channels/{{ client['discord_server_id'] }}" target="_blank">Server Link</a></td>
+                <td><a href="{{ url_for('admin_client', client_id=client['client_id']) }}" title="Edit {{ client['name'] }}">✏️</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="new-client">
+        <form method="POST">
+            <div class="rpi-field">
+                <label for="new-client-id" class="rpi-label">Client ID</label>
+                <input id="new-client-id" type="text" class="rpi-input" placeholder="The ID that will be used in the URL">
+            </div>
+    
+            <button class="rpi-button" type="submit">Add Client</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
