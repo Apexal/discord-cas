@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Admin - Discord CAS Connector</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+
+    <!-- Frank Matranga's RPI CSS classes -->
+    <link rel="stylesheet" href="https://apexal.github.io/rpi-css/rpi.css">
+    <style>
+        .rpi-container {
+            margin-top: 2em;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="rpi-navbar">
+        <span class="navbar-brand">Discord CAS Connector</span>
+    </header>
+    <main>
+        {% if alert %}
+        <div class="rpi-alert">{{ alert }}</div>
+        {% endif %}
+        <div class="rpi-container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</body>
+
+</html>
