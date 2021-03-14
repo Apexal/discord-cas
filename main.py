@@ -1,4 +1,5 @@
 import os
+
 from utils import hget_json
 import redis
 import json
@@ -7,9 +8,10 @@ from flask_cas import CAS, login_required, logout
 from dotenv import load_dotenv
 from werkzeug.exceptions import HTTPException
 import yaml
+import requests
 
 from discord import BOT_JOIN_URL, OAUTH_URL, get_member, get_tokens, get_user, get_user_info, add_user_to_server, add_role_to_member, kick_member_from_server, set_member_nickname
-import requests
+from db import conn_pool, fetch_clients
 
 # Connect to Redis
 db = redis.from_url(os.environ.get('REDIS_URL'),
@@ -27,6 +29,20 @@ cas = CAS(app, '/cas')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 app.config['CAS_SERVER'] = 'https://cas-auth.rpi.edu/cas/login'
 app.config['CAS_AFTER_LOGIN'] = 'index'
+app.config['ADMIN_RCS_IDS'] = os.environ.get('ADMIN_RCS_IDS').split(',')
+
+def get_conn():
+    print('Get DB')
+    if 'db' not in g:
+        g.db = conn_pool.getconn()
+    return g.db
+
+@app.teardown_appcontext
+def close_conn(e):
+    print('Close conn')
+    db = g.pop('db', None)
+    if db:
+        conn_pool.putconn(db)
 
 
 @app.before_request
@@ -52,16 +68,6 @@ def add_template_locals():
         'client': g.client
     }
 
-
-@app.route('/test')
-def test():
-    return 'Testing'
-
-
-@app.route('/test_redis')
-def test_redis():
-    val = db.get('test')
-    return 'Testing redis: ' + val
 
 @app.route('/')
 def splash():
