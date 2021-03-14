@@ -27,7 +27,8 @@ CREATE TABLE public.clients (
     discord_non_rpi_role_id character varying,
     contact_information character varying,
     is_rcs_id_in_nickname boolean DEFAULT true NOT NULL,
-    is_public boolean DEFAULT false NOT NULL
+    is_public boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -112,7 +113,8 @@ CREATE TABLE public.users (
     first_name character varying NOT NULL,
     last_name character varying NOT NULL,
     graduation_year integer,
-    discord_user_id character varying
+    discord_user_id character varying,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -186,4 +188,7 @@ ALTER TABLE ONLY public.users
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20210314032059'),
-    ('20210314032749');
+    ('20210314032749'),
+    ('20210314050306'),
+    ('20210314050423'),
+    ('20210314050510');
