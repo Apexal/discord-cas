@@ -1,7 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
 <h1 class="rpi-page-title">{{ client['name'] }}</h1>
-<p class="rpi-h2">You are logged in with CAS as <strong>{{ rcs_id }}@rpi.edu</strong> <a href="/cas/logout">(Logout)</a></p>
 
 {% if user %}
     <div class="stage user-profile">
@@ -28,7 +27,7 @@
             academic
             use to hide game activity, Spotify, etc. if desired but it's certainly not necessary!
         </p>
-        <a href="{{ url_for('join') }}" class="rpi-button is-fullwidth">Join Server</a>
+        <a href="{{ url_for('join') }}" class="rpi-button is-fullwidth"><span>Join Server as</span> <strong>{{ nickname }}</strong></a>
         {% endif %}
     {% else %}
     <a class="rpi-button is-fullwidth" href="{{ discord_oauth_url }}">Connect Discord Account</a>

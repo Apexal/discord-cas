@@ -2,7 +2,7 @@ import os
 
 from requests.api import get
 
-from utils import hget_json
+from utils import generate_nickname
 import redis
 import json
 from flask import Flask, g, session, request, render_template, redirect, url_for, abort
@@ -161,11 +161,9 @@ def client(client_id: str):
     discord_member = get_member(
         client['discord_server_id'], discord_account_id) if discord_user else None
 
-    print(user)
-    print(client)
-    print(discord_account_id)
+    nickname = generate_nickname(user, client)
 
-    return render_template('client.html', client=client, user=user, discord_user=discord_user, discord_member=discord_member, discord_oauth_url=OAUTH_URL, rcs_id=g.rcs_id)
+    return render_template('client.html', client=client, user=user, discord_user=discord_user, discord_member=discord_member, discord_oauth_url=OAUTH_URL, rcs_id=g.rcs_id, nickname=nickname)
 
 
 @app.route('/profile', methods=['GET', 'POST'])
@@ -204,11 +202,7 @@ def profile():
             if discord_member:
                 # Generate nickname as "<first name> <last name initial> '<2 digit graduation year> (<rcs id>)"
                 # e.g. "Frank M '22 (matraf)"
-                new_nickname = first_name[:20] + ' ' + \
-                    last_name[0] + " '" + str(graduation_year)[2:]
-
-                if client['is_rcs_id_in_nickname']:
-                    new_nickname += f' ({g.rcs_id})'
+                new_nickname = generate_nickname(user, client)
 
                 # Set their nickname
                 try:
@@ -239,11 +233,7 @@ def join():
 
     # Generate nickname as "<first name> <last name initial> '<2 digit graduation year> (<rcs id>)"
     # e.g. "Frank M '22 (matraf)"
-    nickname = user['first_name'][:20] + ' ' + \
-        user['last_name'][0] + " '" + str(user['graduation_year'])[2:]
-
-    if client['is_rcs_id_in_nickname']:
-        nickname += f' ({g.rcs_id})'
+    nickname = generate_nickname(user, client)
 
     # discord_user_id = db.hget('discord_account_ids', g.rcs_id)
     print('session', session)
@@ -253,10 +243,6 @@ def join():
         return redirect(OAUTH_URL)
 
     tokens = session['discord_user_tokens']
-
-    print('discord_user_id', discord_user_id)
-    print('tokens', tokens)
-    print('access_token', tokens['access_token'])
 
     # Add them to the server
     add_user_to_server(server_id, tokens['access_token'],
