@@ -10,6 +10,10 @@
     <!-- Frank Matranga's RPI CSS classes -->
     <link rel="stylesheet" href="https://apexal.github.io/rpi-css/rpi.css">
     <style>
+        .flashes {
+            padding: 0;
+        }
+
         .navbar-item.right {
             float: right;
         }
@@ -56,9 +60,16 @@
         <span class="navbar-item right" href="#">Logged in as <strong>{{ rcs_id }}</strong></span>
     </header>
     <main class="rpi-card">
-        {% if alert %}
-        <div class="rpi-alert">{{ alert }}</div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+                {% for message in messages %}
+                <div class="rpi-alert info">{{ message }}</div>
+                {% endfor %}
+            </ul>
         {% endif %}
+        {% endwith %}
+        
         {% block content %}{% endblock %}
     </main>
     <footer class="rpi-footer">
