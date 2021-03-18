@@ -1,22 +1,5 @@
 {% extends "layout.html" %}
 {% block content %}
 <h1>Your Profile</h1>
-<form method="POST" style="margin-top: 2rem;" action="{{ url_for('profile') }}">
-    <div class="field">
-        <label class="rpi-label" for="first-name">First Name</label>
-        <input class="rpi-input" value="{{ user['first_name'] }}" type="text" name="first_name" id="first-name"
-            placeholder="Your given name or nickname" maxlength="20" required>
-        <label class="rpi-label" for="last-name">Last Name</label>
-        <input class="rpi-input" value="{{ user['last_name'] }}" type="text" name="last_name" id="last-name"
-            placeholder="Your family name" required>
-    </div>
-
-    <div class="field">
-        <label class="rpi-label" for="grad-year">Graduation Year</label>
-        <input class="rpi-input" value="{{ user['graduation_year'] }}" type="number" name="graduation_year"
-            id="grad-year" min="1900" max="2030" placeholder="What year will you graduate?" required>
-    </div>
-
-    <button class="rpi-button is-fullwidth">Save and Continue</button>
-</form>
+{% include "includes/user_profile_form.html" %}
 {% endblock %}

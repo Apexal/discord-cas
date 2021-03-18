@@ -8,16 +8,16 @@
     </div>
     {% if discord_user %}
     <div class="stage discord-user">
-        Discord connected as <strong>{{ discord_user.username }}#{{ discord_user.discriminator }}</strong> <a class="reset-link" href="{{ url_for('reset_discord') }}">✏️</a>
+        Discord connected as <strong>@{{ discord_user.username }}#{{ discord_user.discriminator }}</strong> <a class="reset-link" href="{{ url_for('reset_discord') }}" onclick="return confirm('This will kick your currently connected Discord account from all connected servers.')">✏️</a>
     </div>
 
         {% if discord_member %}
         <div class="stage discord-member">
             Joined server as <strong>@{{ discord_member.nick }}</strong>
 
-            <a class="reset-link" href="{{ url_for('reset_discord') }}" onclick="return confirm('This will kick your currently connected Discord account from the server.')">✏️</a>
+            <a class="reset-link" href="{{ url_for('reset_discord') }}" onclick="return confirm('This will kick your currently connected Discord account from all connected servers.')">✏️</a>
         </div>
-        <a href="https://discord.com/channels/{{ discord_server_id }}" class="rpi-button is-fullwidth" style="margin-top: 1rem;">
+        <a href="https://discord.com/channels/{{ client.discord_server_id }}" class="rpi-button is-fullwidth" style="margin-top: 1rem;">
             <img class="icon" src="https://discord.com/assets/1c8a54f25d101bdc607cec7228247a9a.svg" width="25px" alt="Discord logo" style="margin-right: 5px">Open Discord Server</a>
         {% else %}
         <p>

@@ -5,7 +5,7 @@ from requests.api import get
 from utils import generate_nickname
 import redis
 import json
-from flask import Flask, g, session, request, render_template, redirect, url_for, abort
+from flask import Flask, g, session, request, render_template, redirect, url_for, abort, flash
 from flask_cas import CAS, login_required, logout
 from dotenv import load_dotenv
 from werkzeug.exceptions import HTTPException
@@ -117,6 +117,9 @@ def index():
         conn = get_conn()
         user = fetch_user(conn, g.rcs_id)
         
+        if user is None:
+            return redirect(url_for('profile'))
+
         clients = []
         for client in fetch_clients(conn):
             discord_member = get_member(client['discord_server_id'], user['discord_user_id']) if user else None
@@ -248,6 +251,7 @@ def join():
     add_user_to_server(server_id, tokens['access_token'],
                        discord_user_id, nickname, [rpi_role_id])
     app.logger.info(f'Added {g.rcs_id} to {client["name"]} server')
+    flash('You were added to the server!')
 
     # Set their nickname
     try:
@@ -311,21 +315,22 @@ def discord_callback():
 @app.route('/discord/reset')
 @login_required
 def reset_discord():
-    discord_user_id = db.hget('discord_account_ids', g.rcs_id)
-    server_id = g.client['discord']['server_id']
+    '''Disconnect Discord account from user. Removes Discord user from all connected client servers.'''
 
-    print('discord_user_id', discord_user_id)
-
-    # Attempt to kick member from server and then remove DB records
     conn = get_conn()
+    user = fetch_user(conn, g.rcs_id)
+    
+    for client in fetch_clients(conn):
+        discord_member = get_member(client['discord_server_id'], user['discord_user_id'])
+        if discord_member:
+            try:
+                kick_member_from_server(client['discord_server_id'], user['discord_user_id'])
+                flash(f"Kicked you from {client['name']}")
+            except:
+                flash(f"Couldn't kick you from {client['name']}...")
+
     update_user_discord(conn, g.rcs_id, None)
     session.pop('discord_user_tokens')
-
-    print('discord_user_id', discord_user_id)
-    try:
-        kick_member_from_server(server_id, discord_user_id)
-    except:
-        raise Exception('Failed to kick your old account from the server.')
 
     return redirect(url_for('client', client_id=g.client_id))
 
