@@ -17,7 +17,7 @@ def upsert_user(conn, rcs_id: str, user_dict: Dict):
         cursor.execute("SELECT * FROM users WHERE rcs_id=%s", (rcs_id,))
         if cursor.fetchone():
             # Update user
-            raise NotImplementedError()
+            cursor.execute("UPDATE users SET first_name=%(first_name)s, last_name=%(last_name)s, graduation_year=%(graduation_year)s WHERE rcs_id=%(rcs_id)s", {"rcs_id": rcs_id, **user_dict})
         else:
             # New user
             cursor.execute("""
