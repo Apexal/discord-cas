@@ -120,13 +120,15 @@ def index():
         if user is None:
             return redirect(url_for('profile'))
 
+        discord_user = get_user(user['discord_user_id']) if user['discord_user_id'] else None
+
         clients = []
         for client in fetch_clients(conn):
             discord_member = get_member(client['discord_server_id'], user['discord_user_id']) if user else None
             if discord_member:
                 clients.append(client)
 
-        return render_template('index.html', bot_join_url=BOT_JOIN_URL, user=user, clients=clients)
+        return render_template('index.html', bot_join_url=BOT_JOIN_URL, user=user, discord_user=discord_user, clients=clients)
     else:
         return render_template('index.html', bot_join_url=BOT_JOIN_URL)
 
@@ -194,8 +196,8 @@ def profile():
         discord_user = get_user(
             discord_account_id) if discord_account_id else None
 
-        clients = fetch_clients(conn)
-        for client in clients:
+        clients = []
+        for client in fetch_clients(conn):
             server_id = client['discord_server_id']
 
             # Only exists if user has joined server
@@ -213,10 +215,11 @@ def profile():
                         server_id, discord_account_id, new_nickname)
                     app.logger.info(
                         f'Updated {g.rcs_id}\'s nickname to "{new_nickname}" on server')
+                    clients.append(client)
                 except requests.exceptions.HTTPError as e:
                     app.logger.warning(
                         f'Failed to UPDATE nickname "{new_nickname}" to {g.rcs_id} on {session["client"]["client_id"]} server: {e}')
-
+        flash('Updated your nickname on servers: ' + ', '.join(map(lambda c: c['name'], clients)))
         return redirect(url_for('client', client_id=g.client_id))
 
 
@@ -238,8 +241,6 @@ def join():
     # e.g. "Frank M '22 (matraf)"
     nickname = generate_nickname(user, client)
 
-    # discord_user_id = db.hget('discord_account_ids', g.rcs_id)
-    print('session', session)
     discord_user_id = user['discord_user_id']
     if 'discord_user_tokens' not in session:
         print('No tokens in session')
@@ -296,18 +297,14 @@ def discord_callback():
 
     # Exchange authorization code for tokens
     tokens = get_tokens(authorization_code)
-    print('tokens', tokens)
 
     # Get info on the Discord user that just connected (really only need id)
     discord_user = get_user_info(tokens['access_token'])
-    print('discord_user', discord_user)
 
     # Save to DB
     conn = get_conn()
     update_user_discord(conn, g.rcs_id, discord_user['id'])
     session['discord_user_tokens'] = tokens
-
-    print('client_id', g.client_id)
 
     return redirect(url_for('client', client_id=g.client_id))
 

@@ -6,6 +6,11 @@
 <div class="stage user-profile">
     Profile set as <strong>{{ user.first_name }} {{ user.last_name }} {{ user.graduation_year }}</strong> <a class="reset-link" href="{{ url_for('profile') }}">✏️</a>
 </div>
+<div class="stage discord-user">
+    Discord connected as <strong>@{{ discord_user.username }}#{{ discord_user.discriminator }}</strong> <a class="reset-link" href="{{ url_for('reset_discord') }}" onclick="return confirm('This will kick your currently connected Discord account from all connected servers.')">✏️</a>
+</div>
+
+<h2 style="margin-bottom: -20px; margin-top: 2rem">Joined Servers</h2>
 <ul class="rpi-arrow-nav">
     {% for client in clients %}
     <li><a href="{{ url_for('client', client_id=client.client_id) }}">{{ client.name }}</a></li>
