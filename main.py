@@ -13,7 +13,7 @@ import yaml
 import requests
 
 from discord import BOT_JOIN_URL, OAUTH_URL, get_member, get_tokens, get_user, get_user_info, add_user_to_server, add_role_to_member, kick_member_from_server, set_member_nickname
-from db import add_client, conn_pool, delete_client, delete_user, fetch_client, fetch_clients, fetch_user, upsert_user
+from db import add_client, conn_pool, delete_client, delete_user, fetch_client, fetch_clients, fetch_user, update_user_discord, upsert_user
 
 # Connect to Redis
 db = redis.from_url(os.environ.get('REDIS_URL'),
@@ -30,7 +30,7 @@ cas = CAS(app, '/cas')
 
 app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 app.config['CAS_SERVER'] = 'https://cas-auth.rpi.edu/cas/login'
-app.config['CAS_AFTER_LOGIN'] = 'index'
+app.config['CAS_AFTER_LOGIN'] = 'client'
 app.config['ADMIN_RCS_IDS'] = os.environ.get('ADMIN_RCS_IDS').split(',')
 
 
@@ -85,6 +85,7 @@ def admin():
         new_client = add_client(conn, request.form)
         return redirect(url_for('admin'))
 
+
 @app.route('/admin/<string:client_id>', methods=['GET', 'POST'])
 @login_required
 def admin_client(client_id: str):
@@ -111,8 +112,20 @@ def admin_client(client_id: str):
 
 
 @app.route('/')
-def splash():
-    return render_template('splash.html', bot_join_url=BOT_JOIN_URL)
+def index():
+    if g.is_logged_in:
+        conn = get_conn()
+        user = fetch_user(conn, g.rcs_id)
+        
+        clients = []
+        for client in fetch_clients(conn):
+            discord_member = get_member(client['discord_server_id'], user['discord_user_id']) if user else None
+            if discord_member:
+                clients.append(client)
+
+        return render_template('index.html', bot_join_url=BOT_JOIN_URL, user=user, clients=clients)
+    else:
+        return render_template('index.html', bot_join_url=BOT_JOIN_URL)
 
 
 @app.route('/bot_invite')
@@ -122,7 +135,7 @@ def bot_invite():
 
 @app.route('/<string:client_id>', methods=['GET'])
 @login_required
-def index(client_id: str):
+def client(client_id: str):
     # Set client
     conn = get_conn()
     client = fetch_client(conn, client_id)
@@ -146,30 +159,33 @@ def index(client_id: str):
 
     # Only exists if user has joined server
     discord_member = get_member(
-        client['discord']['server_id'], discord_account_id) if discord_user else None
+        client['discord_server_id'], discord_account_id) if discord_user else None
 
     print(user)
     print(client)
     print(discord_account_id)
 
-    return render_template('index.html', client=client, user=user, discord_user=discord_user, discord_member=discord_member, discord_oauth_url=OAUTH_URL, rcs_id=g.rcs_id)
+    return render_template('client.html', client=client, user=user, discord_user=discord_user, discord_member=discord_member, discord_oauth_url=OAUTH_URL, rcs_id=g.rcs_id)
 
 
-@app.route('/profile', methods=['POST'])
+@app.route('/profile', methods=['GET', 'POST'])
 def profile():
-    if request.method == 'POST':
+    conn = get_conn()
+    user = fetch_user(conn, g.rcs_id)
+
+    if request.method == 'GET':
+        return render_template('profile.html', user=user)
+    elif request.method == 'POST':
         # Grab from form and set profile
         first_name = request.form['first_name'].strip()
         last_name = request.form['last_name'].strip()
-        graduation_year = request.form['graduation_year'].strip()
+        graduation_year = int(request.form['graduation_year'].strip())
 
-        profile = {
+        user = upsert_user(conn, g.rcs_id, {
             'first_name': first_name,
             'last_name': last_name,
-            'graduation_year': graduation_year,
-        }
-        conn = get_conn()
-        user = upsert_user(conn, g.rcs_id, profile)
+            'graduation_year': int(graduation_year)
+        })
 
         # If user has joined Discord server, change their nickname
         # Only exists if user has connected Discord account
@@ -177,61 +193,66 @@ def profile():
         discord_user = get_user(
             discord_account_id) if discord_account_id else None
 
-        # Only exists if user has joined server
-        discord_member = get_member(
-            g.client['discord']['server_id'], discord_account_id) if discord_user else None
+        clients = fetch_clients(conn)
+        for client in clients:
+            server_id = client['discord_server_id']
 
-        if discord_member:
-            # Generate nickname as "<first name> <last name initial> '<2 digit graduation year> (<rcs id>)"
-            # e.g. "Frank M '22 (matraf)"
-            new_nickname = profile['first_name'][:20] + ' ' + \
-                profile['last_name'][0] + " '" + profile['graduation_year'][2:] + \
-                f' ({g.rcs_id})'
+            # Only exists if user has joined server
+            discord_member = get_member(
+                server_id, discord_account_id) if discord_user else None
 
-            server_id = g.client['discord']['server_id']
+            if discord_member:
+                # Generate nickname as "<first name> <last name initial> '<2 digit graduation year> (<rcs id>)"
+                # e.g. "Frank M '22 (matraf)"
+                new_nickname = first_name[:20] + ' ' + \
+                    last_name[0] + " '" + str(graduation_year)[2:]
 
-            # Set their nickname
-            try:
-                set_member_nickname(
-                    server_id, discord_account_id, new_nickname)
-                app.logger.info(
-                    f'Updated {g.rcs_id}\'s nickname to "{new_nickname}" on server')
-            except requests.exceptions.HTTPError as e:
-                app.logger.warning(
-                    f'Failed to UPDATE nickname "{new_nickname}" to {g.rcs_id} on {session["client"]["client_id"]} server: {e}')
+                if client['is_rcs_id_in_nickname']:
+                    new_nickname += f' ({g.rcs_id})'
 
-        return redirect(url_for('index', client_id=g.client_id))
+                # Set their nickname
+                try:
+                    set_member_nickname(
+                        server_id, discord_account_id, new_nickname)
+                    app.logger.info(
+                        f'Updated {g.rcs_id}\'s nickname to "{new_nickname}" on server')
+                except requests.exceptions.HTTPError as e:
+                    app.logger.warning(
+                        f'Failed to UPDATE nickname "{new_nickname}" to {g.rcs_id} on {session["client"]["client_id"]} server: {e}')
 
-
-@app.route('/profile/reset')
-@login_required
-def reset_profile():
-    # Attempt to kick member from server and then remove DB records
-
-    delete_user(get_conn(), g.rcs_id)
-    print(session)
-    return redirect(url_for('index', client_id=g.client_id))
+        return redirect(url_for('client', client_id=g.client_id))
 
 
 @app.route('/join')
 def join():
-    server_id = g.client['discord']['server_id']
-    verified_role_ids = g.client['discord']['verified_role_ids']
+    conn = get_conn()
+
+    client = fetch_client(conn, g.client_id)
+    if client is None:
+        abort(404, 'Unknown Client')
+
+    server_id = client['discord_server_id']
+    rpi_role_id = client['discord_rpi_role_id']
 
     # Get profile
-    conn = get_conn()
     user = fetch_user(conn, g.rcs_id)
-    # profile = hget_json(db, 'profiles', g.rcs_id)
 
     # Generate nickname as "<first name> <last name initial> '<2 digit graduation year> (<rcs id>)"
     # e.g. "Frank M '22 (matraf)"
     nickname = user['first_name'][:20] + ' ' + \
-        user['last_name'][0] + " '" + user['graduation_year'][2:] + \
-        f' ({g.rcs_id})'
+        user['last_name'][0] + " '" + str(user['graduation_year'])[2:]
+
+    if client['is_rcs_id_in_nickname']:
+        nickname += f' ({g.rcs_id})'
 
     # discord_user_id = db.hget('discord_account_ids', g.rcs_id)
+    print('session', session)
     discord_user_id = user['discord_user_id']
-    tokens = hget_json(db, 'discord_account_tokens', g.rcs_id)
+    if 'discord_user_tokens' not in session:
+        print('No tokens in session')
+        return redirect(OAUTH_URL)
+
+    tokens = session['discord_user_tokens']
 
     print('discord_user_id', discord_user_id)
     print('tokens', tokens)
@@ -239,8 +260,8 @@ def join():
 
     # Add them to the server
     add_user_to_server(server_id, tokens['access_token'],
-                       discord_user_id, nickname, verified_role_ids)
-    app.logger.info(f'Added {g.rcs_id} to {g.client["title"]} server')
+                       discord_user_id, nickname, [rpi_role_id])
+    app.logger.info(f'Added {g.rcs_id} to {client["name"]} server')
 
     # Set their nickname
     try:
@@ -252,7 +273,7 @@ def join():
             f'Failed to set nickname "{nickname}" to {g.rcs_id} on {session["client"]["client_id"]} server: {e}')
 
     # Give them the verified roles
-    for role_id in verified_role_ids:
+    for role_id in [rpi_role_id]:
         try:
             add_role_to_member(server_id, discord_user_id, role_id)
             app.logger.info(f'Added verified role to {g.rcs_id} on server')
@@ -260,7 +281,7 @@ def join():
             app.logger.warning(
                 f'Failed to add role to {g.rcs_id} on server: {e}')
 
-    return redirect(url_for('index', client_id=g.client_id))
+    return redirect(url_for('client', client_id=g.client_id))
 
 
 @app.route('/discord/callback', methods=['GET'])
@@ -292,10 +313,13 @@ def discord_callback():
     print('discord_user', discord_user)
 
     # Save to DB
-    db.hset('discord_account_ids', g.rcs_id, discord_user['id'])
-    db.hset('discord_account_tokens', g.rcs_id, json.dumps(tokens))
+    conn = get_conn()
+    update_user_discord(conn, g.rcs_id, discord_user['id'])
+    session['discord_user_tokens'] = tokens
 
-    return redirect(url_for('index', client_id=g.client_id))
+    print('client_id', g.client_id)
+
+    return redirect(url_for('client', client_id=g.client_id))
 
 
 @app.route('/discord/reset')
@@ -307,15 +331,17 @@ def reset_discord():
     print('discord_user_id', discord_user_id)
 
     # Attempt to kick member from server and then remove DB records
-    db.hdel('discord_account_ids', g.rcs_id)
-    db.hdel('discord_account_tokens', g.rcs_id)
+    conn = get_conn()
+    update_user_discord(conn, g.rcs_id, None)
+    session.pop('discord_user_tokens')
+
     print('discord_user_id', discord_user_id)
     try:
         kick_member_from_server(server_id, discord_user_id)
     except:
         raise Exception('Failed to kick your old account from the server.')
 
-    return redirect(url_for('index', client_id=g.client_id))
+    return redirect(url_for('client', client_id=g.client_id))
 
 
 @app.errorhandler(404)
