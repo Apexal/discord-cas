@@ -10,6 +10,9 @@
     <!-- Frank Matranga's RPI CSS classes -->
     <link rel="stylesheet" href="https://apexal.github.io/rpi-css/rpi.css">
     <style>
+        .navbar-item.right {
+            float: right;
+        }
         .stage {
             background-color: var(--rpi-darkred);
             color: white;
@@ -29,6 +32,11 @@
             color: white;
             text-align: center;
         }
+
+        .rpi-footer a {
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -36,6 +44,7 @@
     <header class="rpi-navbar">
         <span class="navbar-brand">{% if client %}{{ client.name }} | {% endif %}Discord CAS Connector</span>
         <a class="navbar-item" href="{{ url_for('index') }}">Home</a>
+        <span class="navbar-item right" href="#">Logged in as <strong>{{ rcs_id }}</strong></span>
     </header>
     <main class="rpi-card">
         {% if alert %}
