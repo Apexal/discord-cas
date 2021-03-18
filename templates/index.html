@@ -2,12 +2,21 @@
 {% block content %}
 <h1 class="rpi-page-title">Discord CAS Connector</h1>
 
+{% if is_logged_in %}
+<div class="stage user-profile">
+    Profile set as <strong>{{ user.first_name }} {{ user.last_name }} {{ user.graduation_year }}</strong> <a class="reset-link" href="{{ url_for('profile') }}">✏️</a>
+</div>
+<ul class="rpi-arrow-nav">
+    {% for client in clients %}
+    <li><a href="{{ url_for('client', client_id=client.client_id) }}">{{ client.name }}</a></li>
+    {% endfor %}
+</ul>
+{% else %}
 <p>
     This app/bot allows Discord users to verify their RPI identity through CAS before joining a server. It is free to use and is maintained and deploy by
     <a href="https://github.com/Apexal">Frank Matranga '22 (matraf)</a>.
 </p>
-
 <strong>Interested? Contact me and I will walk you through the process. It takes only a few minutes.</strong>
 <a href="mailto:matraf@rpi.edu?subject=Discord+CAS+Connector" class="rpi-button red is-fullwidth">Email Frank (matraf@rpi.edu)</a>
-
+{% endif %}
 {% endblock %}

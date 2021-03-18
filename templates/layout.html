@@ -35,23 +35,21 @@
 <body>
     <header class="rpi-navbar">
         <span class="navbar-brand">{% if client %}{{ client.name }} | {% endif %}Discord CAS Connector</span>
+        <a class="navbar-item" href="{{ url_for('index') }}">Home</a>
     </header>
     <main class="rpi-card">
         {% if alert %}
         <div class="rpi-alert">{{ alert }}</div>
         {% endif %}
         {% block content %}{% endblock %}
-        <details>
-            <summary class="rpi-h2">What is this site?</summary>
-            This is not an official RPI service. It is an open-source webapp developed by students. The source code is
+    </main>
+    <footer class="rpi-footer">
+        <p>Created and maintained by <a href="https://github.com/Apexal" target="_blank">Frank Matranga '22</a></p>
+        <p>This is not an official RPI service. The source code is
             freely
             available
             on <a href="https://github.com/Apexal/discord-cas" target="_blank">GitHub</a>. Please report issues or
-            request features there!
-        </details>
-    </main>
-    <footer class="rpi-footer">
-        <p>Created and maintained for free by Frank Matranga '22</p>
+            request features there!</p>
     </footer>
 </body>
 
