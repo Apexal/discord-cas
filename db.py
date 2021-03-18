@@ -43,6 +43,11 @@ def fetch_client(conn, client_id: str):
         cursor.execute("SELECT * FROM clients WHERE client_id=%s LIMIT 1", (client_id,))
         return cursor.fetchone()
 
+def update_user_discord(conn, rcs_id: str, discord_user_id: str):
+    with conn.cursor() as cursor:
+        cursor.execute("UPDATE users SET discord_user_id=%s WHERE rcs_id=%s", (discord_user_id, rcs_id))
+        conn.commit()
+
 def add_client(conn, form: Dict):
     with conn.cursor() as cursor:
         cursor.execute("""
