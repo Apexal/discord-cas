@@ -123,7 +123,8 @@ def index():
         for client in fetch_clients(conn):
             discord_member = get_member(
                 client['discord_server_id'],
-                user['discord_user_id']) if user else None
+                user['discord_user_id']) if discord_user is not None and user is not None else None
+            
             if discord_member:
                 joined_clients.append(client)
             elif client['is_public']:
@@ -167,7 +168,7 @@ def client_index(client_id: str):
 
     # Only exists if user has connected Discord account
     discord_account_id = user['discord_user_id'] if user else None
-    discord_user = get_user(discord_account_id) if discord_account_id else None
+    discord_user = get_user(discord_account_id) if discord_account_id is not None else None
 
     # Only exists if user has joined server
     discord_member = get_member(
@@ -210,8 +211,7 @@ def profile():
         # If user has joined Discord server, change their nickname
         # Only exists if user has connected Discord account
         discord_account_id = user["discord_user_id"]
-        discord_user = get_user(
-            discord_account_id) if discord_account_id else None
+        discord_user = get_user(discord_account_id) if discord_account_id is not None else None
 
         clients = []
         for client in fetch_clients(conn):
@@ -239,8 +239,10 @@ def profile():
                         f'Failed to UPDATE nickname "{new_nickname}" to {g.rcs_id} on {session["client"]["client_id"]} server: {e}')
         flash('Updated your nickname on servers: ' +
               ', '.join(map(lambda c: c['name'], clients)))
-        return redirect(url_for('client_index', client_id=g.client_id))
-
+        if g.client_id:
+            return redirect(url_for('client_index', client_id=g.client_id))
+        else:
+            return redirect(url_for('index'))
 
 @app.route('/join')
 @login_required
@@ -342,6 +344,10 @@ def reset_discord():
     conn = get_conn()
     user = fetch_user(conn, g.rcs_id)
 
+    if user['discord_user_id'] is None:
+        flash("You aren't connected to a Discord account.")
+        return redirect(url_for('index'))
+
     for client in fetch_clients(conn):
         discord_member = get_member(
             client['discord_server_id'], user['discord_user_id'])
@@ -354,7 +360,8 @@ def reset_discord():
                 flash(f"Couldn't kick you from {client['name']}...")
 
     update_user_discord(conn, g.rcs_id, None)
-    session.pop('discord_user_tokens')
+    if 'discord_user_tokens' in session:
+        session.pop('discord_user_tokens')
 
     return redirect(url_for('client_index', client_id=g.client_id))
 

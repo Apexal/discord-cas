@@ -2,6 +2,10 @@
 {% block content %}
 <h1 class="rpi-page-title">{{ client['name'] }}</h1>
 
+{% if client['welcome_message'] %}
+<p class="welcome-message">{{ client['welcome_message'] }}</p>
+{% endif %}
+
 {% if user %}
     <div class="stage user-profile">
         Profile set as <strong>{{ user.first_name }} {{ user.last_name }} {{ user.graduation_year }}</strong> <a class="reset-link" href="{{ url_for('profile') }}">✏️</a>
@@ -28,13 +32,13 @@
             use to hide game activity, Spotify, etc. if desired but it's certainly not necessary!
         </p>
         <a href="{{ url_for('join') }}" class="rpi-button large is-fullwidth">
-            <span>Click to Join Server </span>
+            <span>Click to Join Server</span>
             <br>
             <strong class="nickname">as @{{ nickname }}</strong>
         </a>
         {% endif %}
     {% else %}
-    <a class="rpi-button is-fullwidth" href="{{ discord_oauth_url }}&state={{ client.client_id }}">Connect Discord Account</a>
+    <a class="rpi-button is-fullwidth" href="{{ discord_oauth_url }}&state={{ client.client_id }}">Connect Discord Account to Join Server</a>
     {% endif %}
 {% else %}
 {% include "includes/user_profile_form.html" %}
