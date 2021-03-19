@@ -4,7 +4,7 @@
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>{% if client %}{{ client.title }}{% else %}Discord CAS Connector{% endif %}</title>
+    <title>{% if client %}{{ client.name }} | {% endif %}Discord CAS Connector</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
 
     <!-- Frank Matranga's RPI CSS classes -->
@@ -54,6 +54,16 @@
 
         .rpi-button .nickname {
             font-size: 0.75rem;
+        }
+
+        .welcome-message {
+            font-style: italic;
+        }
+
+        .welcome-message::before, .welcome-message::after {
+            content: '"';
+            color: var(--rpi-darkestgray);
+            font-size: 1.5rem;
         }
     </style>
 </head>
