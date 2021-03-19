@@ -1,10 +1,9 @@
-'''Methods to interact with Discord API. 
+'''Methods to interact with Discord API.
 
 Only a small subset of API endpoints are accounted for here.
 Based on the Discord API Documentation https://discord.com/developers/docs/intro
 '''
 
-from http.client import responses
 import os
 from typing import Dict, List
 import requests
@@ -25,9 +24,14 @@ HEADERS = {
     'Authorization': 'Bot ' + BOT_TOKEN,
 }
 
+# Calculated on the Discord Developers page, this value means
+# - Manage Roles
+# - Kick Members
+# - Manage Nicknames
+PERMISSIONS = '402653186'
 
 # The url users are redirected to to initiate the OAuth2 flow
-BOT_JOIN_URL = f'https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions=134217730&redirect_uri={REDIRECT_URI}&scope=bot'
+BOT_JOIN_URL = f'https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&permissions={PERMISSIONS}&redirect_uri={REDIRECT_URI}&scope=bot'
 OAUTH_URL = f'https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&response_type=code&scope=guilds.join%20identify'
 
 
@@ -38,38 +42,34 @@ def get_tokens(code):
 
     Discord docs: https://discord.com/developers/docs/topics/oauth2
     '''
-    response = requests.post(f'{API_BASE}/oauth2/token',
-                             data={
-                                 'client_id': CLIENT_ID,
-                                 'client_secret': CLIENT_SECRET,
-                                 'grant_type': 'authorization_code',
-                                 'code': code,
-                                 'redirect_uri': REDIRECT_URI,
-                                 'scope': 'identity guilds.join'
-                             },
-                             headers={
-                                 'Content-Type': 'application/x-www-form-urlencoded'
-                             }
-                             )
+    response = requests.post(
+        f'{API_BASE}/oauth2/token',
+        data={
+            'client_id': CLIENT_ID,
+            'client_secret': CLIENT_SECRET,
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': REDIRECT_URI,
+            'scope': 'identity guilds.join'},
+        headers={
+            'Content-Type': 'application/x-www-form-urlencoded'})
     response.raise_for_status()
     tokens = response.json()
     return tokens
 
 
 def refresh_tokens(refresh_token):
-    response = requests.post(f'{API_BASE}/oauth2/token',
-                             data={
-                                 'client_id': CLIENT_ID,
-                                 'client_secret': CLIENT_SECRET,
-                                 'grant_type': 'refresh_token',
-                                 'refresh_token': refresh_token,
-                                 'redirect_uri': REDIRECT_URI,
-                                 'scope': 'identity guilds.join'
-                             },
-                             headers={
-                                 'Content-Type': 'application/x-www-form-urlencoded'
-                             }
-                             )
+    response = requests.post(
+        f'{API_BASE}/oauth2/token',
+        data={
+            'client_id': CLIENT_ID,
+            'client_secret': CLIENT_SECRET,
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token,
+            'redirect_uri': REDIRECT_URI,
+            'scope': 'identity guilds.join'},
+        headers={
+            'Content-Type': 'application/x-www-form-urlencoded'})
     response.raise_for_status()
     tokens = response.json()
     return tokens
@@ -91,11 +91,13 @@ def get_user_info(access_token):
     user = response.json()
     return user
 
+
 def get_user(user_id: str) -> Dict:
     response = requests.get(
         f'{API_BASE}/users/{user_id}', headers=HEADERS)
     response.raise_for_status()
     return response.json()
+
 
 def get_member(server_id: str, user_id: str) -> Dict:
     '''
@@ -115,7 +117,12 @@ def get_member(server_id: str, user_id: str) -> Dict:
     return response.json()
 
 
-def add_user_to_server(server_id: str, access_token: str, user_id: str, nickname: str, verified_role_ids: List[str]):
+def add_user_to_server(
+        server_id: str,
+        access_token: str,
+        user_id: str,
+        nickname: str,
+        verified_role_ids: List[str]):
     '''
     Given a Discord user's id, add them to the Discord server with their nickname
     set as their RCS ID and with the verified role.
@@ -152,12 +159,11 @@ def set_member_nickname(server_id: str, user_id: str, nickname: str):
 
     Discord docs: https://discord.com/developers/docs/resources/guild#modify-guild-member
     '''
-    response = requests.patch(f'{API_BASE}/guilds/{server_id}/members/{user_id}',
-                              json={
-                                  'nick': nickname
-                              },
-                              headers=HEADERS
-                              )
+    response = requests.patch(
+        f'{API_BASE}/guilds/{server_id}/members/{user_id}',
+        json={
+            'nick': nickname},
+        headers=HEADERS)
     response.raise_for_status()
     return response
 
@@ -169,7 +175,8 @@ def add_role_to_member(server_id: str, user_id: str, role_id: str):
     Discord docs: https://discord.com/developers/docs/resources/guild#add-guild-member-role
     '''
     response = requests.put(
-        f'{API_BASE}/guilds/{server_id}/members/{user_id}/roles/{role_id}', headers=HEADERS)
+        f'{API_BASE}/guilds/{server_id}/members/{user_id}/roles/{role_id}',
+        headers=HEADERS)
     response.raise_for_status()
     return response
 
@@ -181,6 +188,7 @@ def remove_role_from_member(server_id: str, user_id: str, role_id: str):
     Discord docs: https://discord.com/developers/docs/resources/guild#remove-guild-member-role
     '''
     response = requests.delete(
-        f'{API_BASE}/guilds/{server_id}/members/{user_id}/roles/{role_id}', headers=HEADERS)
+        f'{API_BASE}/guilds/{server_id}/members/{user_id}/roles/{role_id}',
+        headers=HEADERS)
     response.raise_for_status()
     return response

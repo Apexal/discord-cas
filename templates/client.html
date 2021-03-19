@@ -34,7 +34,7 @@
         </a>
         {% endif %}
     {% else %}
-    <a class="rpi-button is-fullwidth" href="{{ discord_oauth_url }}">Connect Discord Account</a>
+    <a class="rpi-button is-fullwidth" href="{{ discord_oauth_url }}&state={{ client.client_id }}">Connect Discord Account</a>
     {% endif %}
 {% else %}
 {% include "includes/user_profile_form.html" %}

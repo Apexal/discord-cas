@@ -10,10 +10,17 @@
     Discord connected as <strong>@{{ discord_user.username }}#{{ discord_user.discriminator }}</strong> <a class="reset-link" href="{{ url_for('reset_discord') }}" onclick="return confirm('This will kick your currently connected Discord account from all connected servers.')">✏️</a>
 </div>
 
-<h2 style="margin-bottom: -20px; margin-top: 2rem">Joined Servers</h2>
+<h2 style="margin-bottom: -20px; margin-top: 2rem">Your Joined Servers</h2>
 <ul class="rpi-arrow-nav">
-    {% for client in clients %}
-    <li><a href="{{ url_for('client', client_id=client.client_id) }}">{{ client.name }}</a></li>
+    {% for client in joined_clients %}
+    <li><a href="{{ url_for('client_index', client_id=client.client_id) }}">{{ client.name }}</a></li>
+    {% endfor %}
+</ul>
+
+<h2 style="margin-bottom: -20px; margin-top: 2rem">Public Servers</h2>
+<ul class="rpi-arrow-nav">
+    {% for client in public_clients %}
+    <li><a href="{{ url_for('client_index', client_id=client.client_id) }}">{{ client.name }}</a></li>
     {% endfor %}
 </ul>
 {% else %}

@@ -3,13 +3,19 @@ import psycopg2.pool
 import psycopg2.extras
 import os
 
-conn_pool = psycopg2.pool.SimpleConnectionPool(minconn=1, maxconn=10, cursor_factory=psycopg2.extras.RealDictCursor, dsn=os.environ.get(
-    'DATABASE_URL'))
+conn_pool = psycopg2.pool.SimpleConnectionPool(
+    minconn=1,
+    maxconn=10,
+    cursor_factory=psycopg2.extras.RealDictCursor,
+    dsn=os.environ.get('DATABASE_URL'))
+
 
 def fetch_user(conn, rcs_id: str):
     with conn.cursor() as cursor:
-        cursor.execute("SELECT * FROM users WHERE rcs_id=%s LIMIT 1", (rcs_id,))
+        cursor.execute(
+            "SELECT * FROM users WHERE rcs_id=%s LIMIT 1", (rcs_id,))
         return cursor.fetchone()
+
 
 def upsert_user(conn, rcs_id: str, user_dict: Dict):
     with conn.cursor() as cursor:
@@ -17,7 +23,9 @@ def upsert_user(conn, rcs_id: str, user_dict: Dict):
         cursor.execute("SELECT * FROM users WHERE rcs_id=%s", (rcs_id,))
         if cursor.fetchone():
             # Update user
-            cursor.execute("UPDATE users SET first_name=%(first_name)s, last_name=%(last_name)s, graduation_year=%(graduation_year)s WHERE rcs_id=%(rcs_id)s", {"rcs_id": rcs_id, **user_dict})
+            cursor.execute(
+                "UPDATE users SET first_name=%(first_name)s, last_name=%(last_name)s, graduation_year=%(graduation_year)s WHERE rcs_id=%(rcs_id)s", {
+                    "rcs_id": rcs_id, **user_dict})
         else:
             # New user
             cursor.execute("""
@@ -28,25 +36,34 @@ def upsert_user(conn, rcs_id: str, user_dict: Dict):
         cursor.execute("SELECT * FROM users WHERE rcs_id=%s", (rcs_id,))
         return cursor.fetchone()
 
+
 def delete_user(conn, rcs_id: str):
     with conn.cursor() as cursor:
         cursor.execute("DELETE FROM users WHERE rcs_id=%s", (rcs_id,))
         conn.commit()
+
 
 def fetch_clients(conn):
     with conn.cursor() as cursor:
         cursor.execute("SELECT * FROM clients ORDER BY created_at")
         return cursor.fetchall()
 
+
 def fetch_client(conn, client_id: str):
     with conn.cursor() as cursor:
-        cursor.execute("SELECT * FROM clients WHERE client_id=%s LIMIT 1", (client_id,))
+        cursor.execute(
+            "SELECT * FROM clients WHERE client_id=%s LIMIT 1", (client_id,))
         return cursor.fetchone()
+
 
 def update_user_discord(conn, rcs_id: str, discord_user_id: str):
     with conn.cursor() as cursor:
-        cursor.execute("UPDATE users SET discord_user_id=%s WHERE rcs_id=%s", (discord_user_id, rcs_id))
+        cursor.execute(
+            "UPDATE users SET discord_user_id=%s WHERE rcs_id=%s",
+            (discord_user_id,
+             rcs_id))
         conn.commit()
+
 
 def add_client(conn, form: Dict):
     with conn.cursor() as cursor:
@@ -76,8 +93,10 @@ def add_client(conn, form: Dict):
         ))
         conn.commit()
 
-        cursor.execute("SELECT * FROM clients WHERE client_id=%s", (form['client_id'],))
+        cursor.execute(
+            "SELECT * FROM clients WHERE client_id=%s", (form['client_id'],))
         return cursor.fetchone()
+
 
 def delete_client(conn, client_id: str):
     with conn.cursor() as cursor:

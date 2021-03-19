@@ -1,36 +1,30 @@
 import os
 
-from requests.api import get
-
-from utils import generate_nickname
-import redis
-import json
-from flask import Flask, g, session, request, render_template, redirect, url_for, abort, flash
-from flask_cas import CAS, login_required, logout
-from dotenv import load_dotenv
-from werkzeug.exceptions import HTTPException
-import yaml
 import requests
+from dotenv import load_dotenv
+from flask import (Flask, abort, flash, g, redirect, render_template, request,
+                   session, url_for)
+from flask_cas import CAS, login_required
+from werkzeug.exceptions import HTTPException
 
-from discord import BOT_JOIN_URL, OAUTH_URL, get_member, get_tokens, get_user, get_user_info, add_user_to_server, add_role_to_member, kick_member_from_server, set_member_nickname
-from db import add_client, conn_pool, delete_client, delete_user, fetch_client, fetch_clients, fetch_user, update_user_discord, upsert_user
-
-# Connect to Redis
-db = redis.from_url(os.environ.get('REDIS_URL'),
-                    charset='utf-8', decode_responses=True)
+from db import (add_client, conn_pool, delete_client, delete_user,
+                fetch_client, fetch_clients, fetch_user, update_user_discord,
+                upsert_user)
+from discord import (BOT_JOIN_URL, OAUTH_URL, add_role_to_member,
+                     add_user_to_server, get_member, get_tokens, get_user,
+                     get_user_info, kick_member_from_server,
+                     set_member_nickname)
+from utils import generate_nickname
 
 # Load .env into os.environ
 load_dotenv()
-
-with open('clients.yml') as f:
-    clients = yaml.load(f, Loader=yaml.FullLoader)
 
 app = Flask(__name__)
 cas = CAS(app, '/cas')
 
 app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 app.config['CAS_SERVER'] = 'https://cas-auth.rpi.edu/cas/login'
-app.config['CAS_AFTER_LOGIN'] = 'client'
+app.config['CAS_AFTER_LOGIN'] = 'client_index'
 app.config['ADMIN_RCS_IDS'] = os.environ.get('ADMIN_RCS_IDS').split(',')
 
 
@@ -83,6 +77,7 @@ def admin():
     else:
         # Add client
         new_client = add_client(conn, request.form)
+        flash(f'Added new client {new_client["name"]}')
         return redirect(url_for('admin'))
 
 
@@ -116,19 +111,31 @@ def index():
     if g.is_logged_in:
         conn = get_conn()
         user = fetch_user(conn, g.rcs_id)
-        
+
         if user is None:
             return redirect(url_for('profile'))
 
-        discord_user = get_user(user['discord_user_id']) if user['discord_user_id'] else None
+        discord_user = get_user(
+            user['discord_user_id']) if user['discord_user_id'] else None
 
-        clients = []
+        public_clients = []
+        joined_clients = []
         for client in fetch_clients(conn):
-            discord_member = get_member(client['discord_server_id'], user['discord_user_id']) if user else None
+            discord_member = get_member(
+                client['discord_server_id'],
+                user['discord_user_id']) if user else None
             if discord_member:
-                clients.append(client)
+                joined_clients.append(client)
+            elif client['is_public']:
+                public_clients.append(client)
 
-        return render_template('index.html', bot_join_url=BOT_JOIN_URL, user=user, discord_user=discord_user, clients=clients)
+        return render_template(
+            'index.html',
+            bot_join_url=BOT_JOIN_URL,
+            user=user,
+            discord_user=discord_user,
+            joined_clients=joined_clients,
+            public_clients=public_clients)
     else:
         return render_template('index.html', bot_join_url=BOT_JOIN_URL)
 
@@ -140,7 +147,7 @@ def bot_invite():
 
 @app.route('/<string:client_id>', methods=['GET'])
 @login_required
-def client(client_id: str):
+def client_index(client_id: str):
     # Set client
     conn = get_conn()
     client = fetch_client(conn, client_id)
@@ -164,14 +171,24 @@ def client(client_id: str):
 
     # Only exists if user has joined server
     discord_member = get_member(
-        client['discord_server_id'], discord_account_id) if discord_user else None
+        client['discord_server_id'],
+        discord_account_id) if discord_user else None
 
     nickname = generate_nickname(user, client)
 
-    return render_template('client.html', client=client, user=user, discord_user=discord_user, discord_member=discord_member, discord_oauth_url=OAUTH_URL, rcs_id=g.rcs_id, nickname=nickname)
+    return render_template(
+        'client.html',
+        client=client,
+        user=user,
+        discord_user=discord_user,
+        discord_member=discord_member,
+        discord_oauth_url=OAUTH_URL,
+        rcs_id=g.rcs_id,
+        nickname=nickname)
 
 
 @app.route('/profile', methods=['GET', 'POST'])
+@login_required
 def profile():
     conn = get_conn()
     user = fetch_user(conn, g.rcs_id)
@@ -205,7 +222,8 @@ def profile():
                 server_id, discord_account_id) if discord_user else None
 
             if discord_member:
-                # Generate nickname as "<first name> <last name initial> '<2 digit graduation year> (<rcs id>)"
+                # Generate nickname as
+                # "<first name> <last name initial> '<2 digit graduation year> (<rcs id>)"
                 # e.g. "Frank M '22 (matraf)"
                 new_nickname = generate_nickname(user, client)
 
@@ -219,11 +237,13 @@ def profile():
                 except requests.exceptions.HTTPError as e:
                     app.logger.warning(
                         f'Failed to UPDATE nickname "{new_nickname}" to {g.rcs_id} on {session["client"]["client_id"]} server: {e}')
-        flash('Updated your nickname on servers: ' + ', '.join(map(lambda c: c['name'], clients)))
-        return redirect(url_for('client', client_id=g.client_id))
+        flash('Updated your nickname on servers: ' +
+              ', '.join(map(lambda c: c['name'], clients)))
+        return redirect(url_for('client_index', client_id=g.client_id))
 
 
 @app.route('/join')
+@login_required
 def join():
     conn = get_conn()
 
@@ -243,8 +263,7 @@ def join():
 
     discord_user_id = user['discord_user_id']
     if 'discord_user_tokens' not in session:
-        print('No tokens in session')
-        return redirect(OAUTH_URL)
+        return redirect(OAUTH_URL + '&state=' + g.client_id)
 
     tokens = session['discord_user_tokens']
 
@@ -261,7 +280,9 @@ def join():
             f'Set {g.rcs_id}\'s nickname to "{nickname}" on server')
     except requests.exceptions.HTTPError as e:
         app.logger.warning(
-            f'Failed to set nickname "{nickname}" to {g.rcs_id} on {session["client"]["client_id"]} server: {e}')
+            f'Failed to set nickname "{nickname}"'
+            + ' to {g.rcs_id} on {session["client"]["client_id"]} '
+            + 'server: {e}')
 
     # Give them the verified roles
     for role_id in [rpi_role_id]:
@@ -272,7 +293,7 @@ def join():
             app.logger.warning(
                 f'Failed to add role to {g.rcs_id} on server: {e}')
 
-    return redirect(url_for('client', client_id=g.client_id))
+    return redirect(url_for('client_index', client_id=g.client_id))
 
 
 @app.route('/discord/callback', methods=['GET'])
@@ -281,19 +302,23 @@ def discord_callback():
     # Extract code or error from URL
     authorization_code = request.args.get('code')
     error = request.args.get('error')
+    state = request.args.get('state')
+    g.client_id = state
 
     if error:
         # Handle the special case where the user declined to connect
         if error == 'access_denied':
             app.logger.error(
                 f'{g.rcs_id} declined to connect their Discord account')
-            return render_template('error.html', error='You declined to connect your Discord account!')
-        else:
-            # Handle generic Discord error
-            error_description = request.args.get('error_description')
-            app.logger.error(
-                f'An error occurred on the Discord callback for {g.rcs_id}: {error_description}')
-            raise Exception(error_description)
+            return render_template(
+                'error.html',
+                error='You declined to connect your Discord account!')
+
+        # Handle generic Discord error
+        error_description = request.args.get('error_description')
+        app.logger.error(
+            f'An error occurred on the Discord callback for {g.rcs_id}: {error_description}')
+        raise Exception(error_description)
 
     # Exchange authorization code for tokens
     tokens = get_tokens(authorization_code)
@@ -306,7 +331,7 @@ def discord_callback():
     update_user_discord(conn, g.rcs_id, discord_user['id'])
     session['discord_user_tokens'] = tokens
 
-    return redirect(url_for('client', client_id=g.client_id))
+    return redirect(url_for('client_index', client_id=g.client_id))
 
 
 @app.route('/discord/reset')
@@ -316,20 +341,22 @@ def reset_discord():
 
     conn = get_conn()
     user = fetch_user(conn, g.rcs_id)
-    
+
     for client in fetch_clients(conn):
-        discord_member = get_member(client['discord_server_id'], user['discord_user_id'])
+        discord_member = get_member(
+            client['discord_server_id'], user['discord_user_id'])
         if discord_member:
             try:
-                kick_member_from_server(client['discord_server_id'], user['discord_user_id'])
+                kick_member_from_server(
+                    client['discord_server_id'], user['discord_user_id'])
                 flash(f"Kicked you from {client['name']}")
-            except:
+            except Exception:
                 flash(f"Couldn't kick you from {client['name']}...")
 
     update_user_discord(conn, g.rcs_id, None)
     session.pop('discord_user_tokens')
 
-    return redirect(url_for('client', client_id=g.client_id))
+    return redirect(url_for('client_index', client_id=g.client_id))
 
 
 @app.errorhandler(404)
